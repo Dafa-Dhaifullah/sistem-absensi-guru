@@ -11,6 +11,8 @@ use App\Http\Controllers\ProfileController;
 */
 
 // Controller Admin (Tahap 3, 4, 6)
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\DashboardAdminController; 
 use App\Http\Controllers\Admin\DataGuruController;
 use App\Http\Controllers\Admin\AkunAdminController;
 use App\Http\Controllers\Admin\AkunPiketController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Admin\JadwalPiketController;
 use App\Http\Controllers\Admin\KalenderBlokController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\LaporanController;
+
 
 // Controller Piket (Tahap 5)
 use App\Http\Controllers\Piket\DashboardController;
@@ -38,18 +41,24 @@ Route::get('/', function () {
 // 2. Rute Dashboard (Breeze Asli) - KITA MODIFIKASI
 // Rute ini akan menjadi "Gerbang Otomatis" yang mengarahkan
 // user ke dashboard yang benar berdasarkan role mereka.
+ // Pastikan ini ada di atas
+
+// ... Rute lain ...
+
 Route::get('/dashboard', function () {
-    $role = auth()->user()->role;
+
+$role = auth()->user()->role;
 
     if ($role == 'admin') {
         return redirect()->route('admin.dashboard');
     } elseif ($role == 'piket') {
-        return redirect()->route('piket.dashboard');
+        return redirect()->route('piket.dashboard'); // <-- INI YANG TERJADI
     } else {
-        // Cadangan jika ada role aneh
-        return view('dashboard'); 
+        return view('dashboard');
     }
+
 })->middleware(['auth', 'verified'])->name('dashboard');
+
 
 // 3. Rute Profil (Bawaan Breeze, biarkan saja)
 Route::middleware('auth')->group(function () {
@@ -67,10 +76,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     
     // Dashboard Admin
-    Route::get('/dashboard', function () {
-        // Nanti Anda harus buat file: resources/views/admin/dashboard.blade.php
-        return view('admin.dashboard'); 
-    })->name('dashboard');
+   // Dashboard Admin
+Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
 
     // Tahap 3: CRUD Sederhana
     Route::resource('data-guru', DataGuruController::class);

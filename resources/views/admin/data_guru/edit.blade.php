@@ -21,15 +21,16 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.data-guru.store') }}" method="POST">
+                    <form action="{{ route('admin.data-guru.update', $guru->id) }}" method="POST">
                         @csrf
+                        @method('PUT')
                         <div class="space-y-4">
                             
                             <div>
                                 <label for="nama_guru" class="block text-sm font-medium text-gray-700">Nama Guru</label>
                                 <input type="text" name="nama_guru" id="nama_guru" 
                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" 
-                                       value="{{ old('nama_guru') }}" required>
+                                       value="{{ old('nama_guru', $guru->nama_guru) }}" required>
                                 @error('nama_guru')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                 @enderror

@@ -8,7 +8,7 @@ use App\Models\JadwalPelajaran;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class DashboardController extends Controller
+class DashboardAdminController extends Controller
 {
     /**
      * Menampilkan halaman dashboard admin.
