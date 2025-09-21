@@ -52,11 +52,6 @@
                                     <x-input-error :messages="$errors->get('hari')" class="mt-2" />
                                 </div>
 
-                                <div>
-                                    <x-input-label for="jam_ke" :value="__('Jam Ke')" />
-                                    <x-text-input id="jam_ke" class="block mt-1 w-full" type="text" name="jam_ke" :value="old('jam_ke')" required placeholder="Contoh: 1-2 atau 3-4" />
-                                    <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
-                                </div>
                             </div>
                             
                             <div class="space-y-6">
@@ -84,11 +79,29 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-4 mt-8 pt-6 border-t">
-                            <x-primary-button>{{ __('Simpan Jadwal') }}</x-primary-button>
-                            <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="text-gray-600 hover:text-gray-900">{{ __('Batal') }}</a>
-                        </div>
-                    </form>
+                        </select>
+<x-input-error :messages="$errors->get('tipe_blok')" class="mt-2" />
+</div>
+
+</div> </div> <div class="mt-6 border-t pt-6">
+    <x-input-label for="jam_ke" :value="__('Pilih Jam Mengajar (Centang yang sesuai)')" />
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2 border p-4 rounded-md">
+
+        @for ($i = 1; $i <= 10; $i++)
+        <label for="jam_{{ $i }}" class="flex items-center">
+            <input id="jam_{{ $i }}" type="checkbox" name="jam_ke[]" value="{{ $i }}"
+                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <span class="ms-2 text-sm text-gray-600">{{ __('Jam ke-') }}{{ $i }}</span>
+        </label>
+        @endfor
+
+    </div>
+    <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
+</div>
+<div class="flex items-center gap-4 mt-8 pt-6 border-t">
+    <x-primary-button>{{ __('Simpan Jadwal') }}</x-primary-button>
+    </form>
                 </div>
             </div>
         </div>

@@ -54,10 +54,10 @@
                                 </div>
 
                                 <div>
-                                    <x-input-label for="jam_ke" :value="__('Jam Ke')" />
-                                    <x-text-input id="jam_ke" class="block mt-1 w-full" type="text" name="jam_ke" :value="old('jam_ke', $jadwal->jam_ke)" required placeholder="Contoh: 1-2 atau 3-4" />
-                                    <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
-                                </div>
+    <x-input-label for="jam_ke" :value="__('Jam Ke')" />
+    <x-text-input id="jam_ke" class="block mt-1 w-full" type="number" name="jam_ke" :value="old('jam_ke', $jadwal->jam_ke)" required min="1" max="10" />
+    <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
+</div>
                             </div>
                             
                             <div class="space-y-6">
