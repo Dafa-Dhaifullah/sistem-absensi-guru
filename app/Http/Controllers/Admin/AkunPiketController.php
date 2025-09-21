@@ -34,15 +34,17 @@ class AkunPiketController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'username' => ['required', 'string', 'max:255', 'unique:'.User::class], // Pastikan username ada
+        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class], // <-- REVISI DI SINI
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         User::create([
             'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'piket', // Otomatis set role sebagai 'piket'
+        'username' => $request->username,
+        'email' => $request->email, // <-- REVISI DI SINI
+        'password' => Hash::make($request->password),
+        'role' => 'piket', 
         ]);
 
         return redirect()->route('admin.akun-piket.index')->with('success', 'Akun piket berhasil ditambahkan.');
@@ -74,13 +76,15 @@ class AkunPiketController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()], // Password boleh kosong
+        'username' => ['required', 'string', 'max:255', 'unique:'.User::class.',username,'.$user->id], // Validasi unik
+        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id], // <-- REVISI DI SINI
+        'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $dataUpdate = [
             'name' => $request->name,
-            'email' => $request->email,
+        'username' => $request->username,
+        'email' => $request->email, 
         ];
 
         if ($request->filled('password')) {

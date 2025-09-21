@@ -21,8 +21,8 @@
                             </div>
 
                             <div class="mt-4">
-                                <x-input-label for="email" :value="__('Email')" />
-                                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" required />
+                                <x-input-label for="email" :value="__('Email (opsional)')" />
+                                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
 

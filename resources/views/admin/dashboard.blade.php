@@ -35,6 +35,23 @@
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-gray-900">Pintasan Manajemen</h3>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Laporan</h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <a href="{{ route('admin.laporan.bulanan') }}" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-200">
+                            <div class="font-semibold text-blue-800">Laporan Rekap Bulanan</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.mingguan') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Laporan Rekap Mingguan</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.individu') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Laporan Individu Guru</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.arsip') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Arsip Logbook Piket</div>
+                        </a>
+
+                    </div>
                         
                         <a href="{{ route('admin.data-guru.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">
                             <div class="font-semibold text-gray-800">Manajemen Data Guru</div>
@@ -62,6 +79,7 @@
                             <div class="font-semibold text-gray-800">Manajemen Akun Admin</div>
                             <div class="text-sm text-gray-600">Kelola akun admin lain.</div>
                         </a>
+                        
                     </div>
                 </div>
             </div>

@@ -30,23 +30,53 @@ class AkunAdminController extends Controller
     /**
      * Menyimpan akun admin baru.
      */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+   // Ganti method store() Anda dengan ini
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'username' => ['required', 'string', 'max:255', 'unique:'.User::class], // Pastikan username ada
+        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class], // <-- REVISI DI SINI
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin', // Otomatis set role sebagai 'admin'
-        ]);
+    User::create([
+        'name' => $request->name,
+        'username' => $request->username,
+        'email' => $request->email, // <-- REVISI DI SINI
+        'password' => Hash::make($request->password),
+        'role' => 'admin', 
+    ]);
 
-        return redirect()->route('admin.akun-admin.index')->with('success', 'Akun admin berhasil ditambahkan.');
+    return redirect()->route('admin.akun-admin.index')->with('success', 'Akun admin berhasil ditambahkan.');
+}
+
+// Ganti method update() Anda dengan ini
+public function update(Request $request, $id)
+{
+    $user = User::findOrFail($id);
+
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'username' => ['required', 'string', 'max:255', 'unique:'.User::class.',username,'.$user->id], // Validasi unik
+        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id], // <-- REVISI DI SINI
+        'password' => ['nullable', 'confirmed', Rules\Password::defaults()], 
+    ]);
+
+    $dataUpdate = [
+        'name' => $request->name,
+        'username' => $request->username,
+        'email' => $request->email, // <-- REVISI DI SINI
+    ];
+
+    if ($request->filled('password')) {
+        $dataUpdate['password'] = Hash::make($request->password);
     }
+
+    $user->update($dataUpdate);
+
+    return redirect()->route('admin.akun-admin.index')->with('success', 'Akun admin berhasil diperbarui.');
+}
 
     /**
      * Menampilkan detail (opsional).
@@ -68,32 +98,7 @@ class AkunAdminController extends Controller
     /**
      * Meng-update akun admin.
      */
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()], // Password boleh kosong
-        ]);
-
-        // Kumpulkan data update
-        $dataUpdate = [
-            'name' => $request->name,
-            'email' => $request->email,
-        ];
-
-        // Hanya update password jika diisi
-        if ($request->filled('password')) {
-            $dataUpdate['password'] = Hash::make($request->password);
-        }
-
-        $user->update($dataUpdate);
-
-        return redirect()->route('admin.akun-admin.index')->with('success', 'Akun admin berhasil diperbarui.');
-    }
-
+    
     /**
      * Menghapus akun admin.
      */

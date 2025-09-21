@@ -14,14 +14,14 @@
                         <div class="space-y-6">
                             
                             <div>
-                                <x-input-label for="name" :value="__('Nama')" />
+                                <x-input-label for="name" :value="__('Nama ')" />
                                 <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name', $user->name)" required autofocus />
                                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
                             </div>
 
                             <div class="mt-4">
-                                <x-input-label for="email" :value="__('Email')" />
-                                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)" required />
+                                <x-input-label for="email" :value="__('Email (opsional)')" />
+                                <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $user->email)"  />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
 

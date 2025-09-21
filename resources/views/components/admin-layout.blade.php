@@ -109,8 +109,29 @@
                         </a>
                     </li>
 
-                    <hr class="border-gray-600">
+                   <hr class="border-gray-600">
                     <li class="px-3 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase">Laporan</li>
+                    
+                    <li>
+                        <a href="{{ route('admin.laporan.bulanan') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+                            <span class="ms-3">Rekap Bulanan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.laporan.mingguan') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+                            <span class="ms-3">Rekap Mingguan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.laporan.individu') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+                            <span class="ms-3">Laporan Individu</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.laporan.arsip') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+                            <span class="ms-3">Arsip Logbook</span>
+                        </a>
+                    </li>
                     </ul>
             </div>
         </aside>

@@ -34,9 +34,7 @@ use App\Http\Controllers\Piket\GantiPasswordController;
 */
 
 // 1. Rute Halaman Depan (Publik)
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/login');
 
 // 2. Rute Dashboard (Breeze Asli) - KITA MODIFIKASI
 // Rute ini akan menjadi "Gerbang Otomatis" yang mengarahkan

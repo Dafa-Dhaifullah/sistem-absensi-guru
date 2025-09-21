@@ -29,38 +29,37 @@
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($semuaAdmin as $admin)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $loop->iteration + ($semuaAdmin->currentPage() - 1) * $semuaAdmin->perPage() }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $admin->name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $admin->email }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.akun-admin.edit', $admin->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                            
-                                            @if(Auth::id() !== $admin->id) <form action="{{ route('admin.akun-admin.destroy', $admin->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900 ml-2">Hapus</button>
-                                            </form>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Data belum tersedia.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+    <thead class="bg-gray-50">
+        <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th> <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        @forelse ($semuaAdmin as $admin)
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $loop->iteration + ($semuaAdmin->currentPage() - 1) * $semuaAdmin->perPage() }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $admin->name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{{ $admin->username }}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $admin->email ?? '-' }}</td> <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a href="{{ route('admin.akun-admin.edit', $admin->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+
+                    @if(Auth::id() !== $admin->id)
+                    <form action="{{ route('admin.akun-admin.destroy', $admin->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-900 ml-2">Hapus</button>
+                    </form>
+                    @endif
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Data belum tersedia.</td> </tr>
+        @endforelse
+    </tbody>
+</table>
                     </div>
                     <div class="mt-4">{{ $semuaAdmin->links() }}</div>
                 </div>
