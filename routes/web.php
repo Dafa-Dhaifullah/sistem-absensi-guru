@@ -85,8 +85,10 @@ Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dash
 
     // Tahap 4: CRUD Kompleks (Otak Sistem)
     // (Kita daftarkan rutenya sekarang, walau controllernya belum dibuat)
-  Route::get('jadwal-piket', [JadwalPiketController::class, 'index'])->name('jadwal-piket.index');
-Route::post('jadwal-piket', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
+  // TAMBAHKAN 3 BARIS INI
+Route::get('jadwal-piket', [JadwalPiketController::class, 'index'])->name('jadwal-piket.index');
+Route::get('jadwal-piket/edit/{hari}/{sesi}', [JadwalPiketController::class, 'edit'])->name('jadwal-piket.edit');
+Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
     Route::resource('kalender-blok', KalenderBlokController::class);
     Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
     // (Nanti di sini kita tambahkan rute untuk Import Excel)
