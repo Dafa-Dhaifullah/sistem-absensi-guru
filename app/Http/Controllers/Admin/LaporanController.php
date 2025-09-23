@@ -8,6 +8,9 @@ use App\Models\DataGuru;
 use App\Models\LaporanHarian;
 use App\Models\LogbookPiket;
 use Illuminate\Support\Carbon;
+use App\Models\KalenderBlok;
+use App\Models\JadwalPelajaran;
+use App\Models\MasterJamPelajaran;
 // use Maatwebsite\Excel\Facades\Excel; // (Nanti untuk export)
 
 class LaporanController extends Controller
@@ -18,8 +21,8 @@ class LaporanController extends Controller
     public function bulanan(Request $request)
     {
         // Tentukan bulan & tahun. Defaultnya bulan ini.
-        $bulan = $request->input('bulan', now()->month);
-        $tahun = $request->input('tahun', now()->year);
+        $bulan = (int) $request->input('bulan', now()->month);
+        $tahun = (int) $request->input('tahun', now()->year);
 
         // Ambil semua guru, beserta data laporan harian HANYA di bulan & tahun tsb.
         $semuaGuru = DataGuru::with(['laporanHarian' => function($query) use ($bulan, $tahun) {
@@ -101,6 +104,7 @@ class LaporanController extends Controller
                 'Total' => $laporan->count()
             ];
         }
+        
 
         // View-nya akan kita buat nanti
         return view('admin.laporan.individu', [
@@ -111,6 +115,61 @@ class LaporanController extends Controller
             'request' => $request // Untuk mengisi ulang form filter
         ]);
     }
+    /**
+ * Menampilkan jadwal pelajaran yang sedang berlangsung SAAT INI.
+ */
+public function realtime(Request $request)
+{
+    // 1. Peta Hari & Waktu
+    $hariMap = [
+        'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+        'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat',
+        'Saturday' => 'Sabtu',
+    ];
+    $today = now();
+    $hariIni = $hariMap[$today->format('l')]; // "Senin"
+    $jamSekarang = $today->toTimeString(); // "18:50:00"
+
+    // 2. Cari Tipe Minggu (Blok)
+    $tipeMinggu = KalenderBlok::where('tanggal_mulai', '<=', $today)
+                              ->where('tanggal_selesai', '>=', $today)
+                              ->first();
+
+    // 3. Cari "Jam Ke-" berapa SEKARANG
+    $jamKeSekarang = MasterJamPelajaran::where('hari', $hariIni)
+                        ->where('jam_mulai', '<=', $jamSekarang)
+                        ->where('jam_selesai', '>=', $jamSekarang)
+                        ->first();
+
+    // 4. Query "Daftar Guru Wajib Hadir" (FINAL)
+    $jadwalSekarang = collect(); // Buat koleksi kosong
+
+    if ($jamKeSekarang) {
+        // JIKA SEKARANG MASIH JAM PELAJARAN...
+        $blokValid = ['Setiap Minggu'];
+        if ($tipeMinggu) {
+            if ($tipeMinggu->tipe_minggu == 'Minggu 1') $blokValid[] = 'Hanya Minggu 1';
+            if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
+        }
+
+        $jadwalSekarang = JadwalPelajaran::where('hari', $hariIni)
+                            ->where('jam_ke', $jamKeSekarang->jam_ke)
+                            ->whereIn('tipe_blok', $blokValid)
+                            ->with('dataGuru') // Ambil data guru
+                            ->orderBy('kelas', 'asc') // Urutkan berdasarkan kelas
+                            ->get();
+    }
+    
+
+    // 5. Tampilkan View
+    return view('admin.laporan.realtime', [
+        'jadwalSekarang' => $jadwalSekarang,
+        'hariIni' => $hariIni,
+        'jamKeSekarang' => $jamKeSekarang,
+        'tipeMinggu' => $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler',
+    ]);
+    
+}
 
     /**
      * Menampilkan arsip logbook piket
@@ -142,4 +201,5 @@ class LaporanController extends Controller
         // TODO: Panggil Export Class untuk Laporan Individu
         return 'Fitur export individu sedang dibuat.';
     }
+    
 }

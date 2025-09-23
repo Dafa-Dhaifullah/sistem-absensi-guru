@@ -13,6 +13,11 @@
                     <p class="mt-1 text-sm text-gray-600">
                         Ini adalah panel kontrol Anda. Silakan kelola sistem melalui menu di bawah.
                     </p>
+                     <a href="{{ route('display.jadwal') }}" target="_blank" 
+       class="block w-full p-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-150 mb-8">
+        <h3 class="text-2xl font-bold">Luncurkan Monitor Real-time</h3>
+        <p class="text-blue-100">Klik di sini untuk membuka halaman jadwal (untuk ditampilkan di monitor depan) di tab baru.</p>
+    </a>
 
                     <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="p-4 bg-blue-100 rounded-lg shadow">
@@ -35,23 +40,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-gray-900">Pintasan Manajemen</h3>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Laporan</h3>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                         
-                        <a href="{{ route('admin.laporan.bulanan') }}" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-200">
-                            <div class="font-semibold text-blue-800">Laporan Rekap Bulanan</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.mingguan') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
-                            <div class="font-semibold text-gray-800">Laporan Rekap Mingguan</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.individu') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
-                            <div class="font-semibold text-gray-800">Laporan Individu Guru</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.arsip') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
-                            <div class="font-semibold text-gray-800">Arsip Logbook Piket</div>
-                        </a>
-
-                    </div>
                         
                         <a href="{{ route('admin.data-guru.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">
                             <div class="font-semibold text-gray-800">Manajemen Data Guru</div>
@@ -63,7 +52,7 @@
                         </a>
                         
                         <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="block p-6 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200">
-                            <div class="font-semibold text-yellow-800">Manajemen Jadwal Pelajaran (Inti)</div>
+                            <div class="font-semibold text-yellow-800">Manajemen Jadwal Pelajaran</div>
                             <div class="text-sm text-yellow-600">Atur jadwal mengajar, blok, dan jam.</div>
                         </a>
                         <a href="{{ route('admin.jadwal-piket.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">
@@ -79,6 +68,29 @@
                             <div class="font-semibold text-gray-800">Manajemen Akun Admin</div>
                             <div class="text-sm text-gray-600">Kelola akun admin lain.</div>
                         </a>
+                        <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Laporan</h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                       
+
+    <a href="{{ route('admin.laporan.realtime') }}" class="block p-4 bg-blue-500 hover:bg-blue-600 rounded-lg shadow-sm border border-blue-700">
+        <div class="font-semibold text-white">Jadwal Real-time</div>
+    </a>
+    <a href="{{ route('admin.laporan.bulanan') }}" ...>
+                        <a href="{{ route('admin.laporan.bulanan') }}" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg shadow-sm border border-blue-200">
+                            <div class="font-semibold text-blue-800">Laporan Rekap Bulanan</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.mingguan') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Laporan Rekap Mingguan</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.individu') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Laporan Individu Guru</div>
+                        </a>
+                        <a href="{{ route('admin.laporan.arsip') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm">
+                            <div class="font-semibold text-gray-800">Arsip Logbook Piket</div>
+                        </a>
+
+                    </div>
                         
                     </div>
                 </div>

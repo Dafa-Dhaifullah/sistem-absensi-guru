@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\JadwalPiketController;
 use App\Http\Controllers\Admin\KalenderBlokController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\DisplayController;
 
 
 // Controller Piket (Tahap 5)
@@ -105,6 +106,9 @@ Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, '
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
 
+    Route::get('jadwal-realtime', [LaporanController::class, 'realtime'])->name('laporan.realtime');
+
+
 });
 
 // ======================================================================
@@ -125,7 +129,7 @@ Route::middleware(['auth', 'role:piket'])->prefix('piket')->name('piket.')->grou
     Route::put('/ganti-password', [GantiPasswordController::class, 'update'])->name('ganti-password.update');
 
 });
-
+Route::get('/display/jadwal', [DisplayController::class, 'jadwalRealtime'])->name('display.jadwal');
 
 // 6. Rute Autentikasi (Bawaan Breeze, HARUS di paling bawah)
 require __DIR__.'/auth.php';

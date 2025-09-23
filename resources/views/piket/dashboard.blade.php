@@ -47,29 +47,42 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    @forelse ($guruWajibHadir as $guru)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ $guru->nama_guru }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <select name="status_guru[{{ $guru->id }}]" 
-                                                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                                    <option value="Hadir">Hadir</option>
-                                                    <option value="Sakit">Sakit</option>
-                                                    <option value="Izin">Izin</option>
-                                                    <option value="DL">Dinas Luar (DL)</option>
-                                                    </select>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                                Tidak ada guru yang terjadwal hari ini.
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
+    @forelse ($guruWajibHadir as $guru)
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {{ $guru->nama_guru }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                
+                @php
+                    // Cek status tersimpan HARI INI (dari controller)
+                    $laporan = $laporanHariIni->get($guru->id);
+                    $statusTersimpan = $laporan ? $laporan->status : null;
+                @endphp
+
+                <select name="status_guru[{{ $guru->id }}]" 
+                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    
+                    <option value="" @if(!$statusTersimpan) selected @endif>-- Belum Diabsen --</option>
+                    
+                    <option value="Hadir" @if($statusTersimpan = 'Hadir') selected @endif>Hadir</option>
+                    <option value="Sakit" @if($statusTersimpan = 'Sakit') selected @endif>Sakit</option>
+                    <option value="Izin" @if($statusTersimpan = 'Izin') selected @endif>Izin</option>
+                    <option value="DL" @if($statusTersimpan = 'DL') selected @endif>Dinas Luar (DL)</option>
+                    
+                    <option value="Alpa" @if($statusTersimpan = 'Alpa') selected @endif>Alpa</option>
+                
+                </select>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                Tidak ada guru yang terjadwal hari ini.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
                             </table>
                         </div>
 
@@ -90,9 +103,7 @@
                         </div>
 
                         <div class="mt-8 border-t pt-6">
-                            <p class="text-sm text-gray-600 mb-4">
-                                Penting: Guru yang wajib hadir tetapi statusnya tidak diisi akan otomatis ditandai **"Alpa"** saat Anda menekan simpan.
-                            </p>
+                            
                             <x-primary-button type="submit" onclick="return confirm('Apakah Anda yakin ingin menyimpan laporan harian ini? Data tidak dapat diubah setelah disimpan.');">
                                 {{ __('Simpan & Kunci Laporan Harian') }}
                             </x-primary-button>
