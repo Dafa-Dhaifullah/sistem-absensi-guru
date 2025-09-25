@@ -57,6 +57,7 @@
                 @php
                     // Cek status tersimpan HARI INI (dari controller)
                     $laporan = $laporanHariIni->get($guru->id);
+                    // Ini sudah benar (menggunakan : null)
                     $statusTersimpan = $laporan ? $laporan->status : null;
                 @endphp
 
@@ -65,12 +66,11 @@
                     
                     <option value="" @if(!$statusTersimpan) selected @endif>-- Belum Diabsen --</option>
                     
-                    <option value="Hadir" @if($statusTersimpan = 'Hadir') selected @endif>Hadir</option>
-                    <option value="Sakit" @if($statusTersimpan = 'Sakit') selected @endif>Sakit</option>
-                    <option value="Izin" @if($statusTersimpan = 'Izin') selected @endif>Izin</option>
-                    <option value="DL" @if($statusTersimpan = 'DL') selected @endif>Dinas Luar (DL)</option>
-                    
-                    <option value="Alpa" @if($statusTersimpan = 'Alpa') selected @endif>Alpa</option>
+                    <option value="Hadir" @if($statusTersimpan == 'Hadir') selected @endif>Hadir</option>
+                    <option value="Sakit" @if($statusTersimpan == 'Sakit') selected @endif>Sakit</option>
+                    <option value="Izin" @if($statusTersimpan == 'Izin') selected @endif>Izin</option>
+                    <option value="DL" @if($statusTersimpan == 'DL') selected @endif>Dinas Luar (DL)</option>
+                    <option value="Alpa" @if($statusTersimpan == 'Alpa') selected @endif>Alpa</option>
                 
                 </select>
             </td>

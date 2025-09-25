@@ -83,7 +83,6 @@ Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dash
     Route::resource('akun-admin', AkunAdminController::class);
     Route::resource('akun-piket', AkunPiketController::class);
     Route::post('akun-piket/{user}/reset-password', [AkunPiketController::class, 'resetPassword'])->name('akun-piket.resetPassword');
-
     // Tahap 4: CRUD Kompleks (Otak Sistem)
     // (Kita daftarkan rutenya sekarang, walau controllernya belum dibuat)
   // TAMBAHKAN 3 BARIS INI

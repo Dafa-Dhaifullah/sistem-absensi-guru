@@ -10,21 +10,36 @@ use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
 {
-    /**
-     * Menampilkan halaman dashboard admin.
-     */
     public function index()
     {
-        // Ambil beberapa data statistik sederhana untuk "shortcut"
+        // --- DATA STATISTIK (SAMA SEPERTI SEBELUMNYA) ---
         $jumlahGuru = DataGuru::count();
         $jumlahAkunPiket = User::where('role', 'piket')->count();
         $jumlahJadwal = JadwalPelajaran::count();
 
-        // Anda harus buat view-nya di: resources/views/admin/dashboard.blade.php
+        // ==========================================================
+        // ## LOGIKA BARU UNTUK NOTIFIKASI WARNING (GABUNGAN) ##
+        // ==========================================================
+
+        // Tentukan status yang dihitung 'tidak hadir'
+        $statusTidakHadir = ['Sakit', 'Izin', 'Alpa']; 
+        $batasAbsen = 4;
+
+        // Query untuk mencari guru yang punya total S+I+A >= 4 kali bulan ini
+        $guruWarning = DataGuru::withCount(['laporanHarian' => function ($query) use ($statusTidakHadir) {
+            $query->whereIn('status', $statusTidakHadir)
+                  ->whereMonth('tanggal', now()->month)
+                  ->whereYear('tanggal', now()->year);
+        }])->having('laporan_harian_count', '>=', $batasAbsen)->get();
+
+        // ==========================================================
+
+        // Kirim semua data ke view
         return view('admin.dashboard', [
             'jumlahGuru' => $jumlahGuru,
             'jumlahAkunPiket' => $jumlahAkunPiket,
             'jumlahJadwal' => $jumlahJadwal,
+            'guruWarning' => $guruWarning, // <-- Kirim data (sekarang hanya 1 variabel)
         ]);
     }
 }
