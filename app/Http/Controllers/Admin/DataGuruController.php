@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Imports\GuruImport;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 use App\Http\Controllers\Controller;
 use App\Models\DataGuru; // Pastikan Model DataGuru sudah di-import
 use Illuminate\Http\Request;
@@ -84,6 +87,37 @@ class DataGuruController extends Controller
         // 3. Kembali ke halaman index dengan pesan sukses
         return redirect()->route('admin.data-guru.index')->with('success', 'Data guru berhasil diperbarui.');
     }
+
+    // Method untuk menampilkan halaman form
+public function showImportForm()
+{
+    return view('admin.data_guru.import');
+}
+
+// Method untuk memproses file Excel
+public function importExcel(Request $request)
+{
+    // Validasi file yang di-upload
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv'
+    ]);
+
+    try {
+        // Lakukan import
+        Excel::import(new GuruImport, $request->file('file'));
+
+        return redirect()->route('admin.data-guru.index')->with('success', 'Data guru berhasil diimpor!');
+
+    } catch (ValidationException $e) {
+        // Jika ada error validasi di dalam file Excel (misal NIP duplikat)
+        $failures = $e->failures();
+        $errorMessages = [];
+        foreach ($failures as $failure) {
+            $errorMessages[] = "Error di baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+        }
+        return redirect()->route('admin.data-guru.import.form')->with('error', 'Gagal mengimpor data. Detail: <br>' . implode('<br>', $errorMessages));
+    }
+}
 
     /**
      * Menghapus data guru dari database.

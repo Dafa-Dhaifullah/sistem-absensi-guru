@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Imports\JadwalPelajaranImport;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 use App\Models\JadwalPelajaran;
 use App\Models\DataGuru; // Kita butuh ini untuk form
 use Illuminate\Http\Request;
@@ -79,6 +82,31 @@ class JadwalPelajaranController extends Controller
     $jadwalPelajaran->update($validatedData);
 
     return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diperbarui.');
+}
+public function showImportForm()
+{
+    return view('admin.jadwal_pelajaran.import');
+}
+
+public function importExcel(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv'
+    ]);
+
+    try {
+        Excel::import(new JadwalPelajaranImport, $request->file('file'));
+
+        return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diimpor!');
+
+    } catch (ValidationException $e) {
+        $failures = $e->failures();
+        $errorMessages = [];
+        foreach ($failures as $failure) {
+            $errorMessages[] = "Error di baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+        }
+        return redirect()->route('admin.jadwal-pelajaran.import.form')->with('error', 'Gagal mengimpor data. Detail: <br>' . implode('<br>', $errorMessages));
+    }
 }
 
     public function destroy(JadwalPelajaran $jadwalPelajaran)

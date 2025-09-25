@@ -14,6 +14,9 @@
                         <a href="{{ route('admin.jadwal-pelajaran.create') }}">
                             <x-primary-button>{{ __('Tambah Jadwal Baru') }}</x-primary-button>
                         </a>
+                         <a href="{{ route('admin.jadwal-pelajaran.import.form') }}">
+        <x-secondary-button>{{ __('Import dari Excel') }}</x-secondary-button>
+    </a>
                         </div>
 
                     @if (session('success'))

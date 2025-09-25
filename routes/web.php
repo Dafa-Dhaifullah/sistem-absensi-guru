@@ -78,6 +78,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
    // Dashboard Admin
 Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
 
+    // Rute untuk menampilkan form import
+Route::get('data-guru/import', [DataGuruController::class, 'showImportForm'])->name('data-guru.import.form');
+// Rute untuk memproses file
+Route::post('data-guru/import', [DataGuruController::class, 'importExcel'])->name('data-guru.import.excel');
+
     // Tahap 3: CRUD Sederhana
     Route::resource('data-guru', DataGuruController::class);
     Route::resource('akun-admin', AkunAdminController::class);
@@ -90,6 +95,8 @@ Route::get('jadwal-piket', [JadwalPiketController::class, 'index'])->name('jadwa
 Route::get('jadwal-piket/edit/{hari}/{sesi}', [JadwalPiketController::class, 'edit'])->name('jadwal-piket.edit');
 Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
     Route::resource('kalender-blok', KalenderBlokController::class);
+    Route::get('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'showImportForm'])->name('jadwal-pelajaran.import.form');
+Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'importExcel'])->name('jadwal-pelajaran.import.excel');
     Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
     // (Nanti di sini kita tambahkan rute untuk Import Excel)
 

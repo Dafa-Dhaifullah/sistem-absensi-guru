@@ -4,18 +4,26 @@
             {{ __('Manajemen Data Guru') }}
         </h2>
     </x-slot>
+    
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+
+                    
                     
                     <div class="mb-4">
                         <a href="{{ route('admin.data-guru.create') }}" 
                            class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
                             Tambah Guru Baru
                         </a>
+                        <a href="{{ route('admin.data-guru.import.form') }}">
+        <x-secondary-button>{{ __('Import dari Excel') }}</x-secondary-button>
+    </a>
+
                     </div>
+                    
 
                     @if (session('success'))
                         <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
@@ -82,6 +90,7 @@
                     <div class="mt-4">
                         {{ $semuaGuru->links() }}
                     </div>
+
 
                 </div>
             </div>
