@@ -111,6 +111,7 @@ Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'impor
     Route::get('laporan/export/bulanan', [LaporanController::class, 'exportBulanan'])->name('laporan.export.bulanan');
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
+    Route::get('laporan/export/arsip', [LaporanController::class, 'exportArsip'])->name('laporan.export.arsip');
 
     Route::get('jadwal-realtime', [LaporanController::class, 'realtime'])->name('laporan.realtime');
 

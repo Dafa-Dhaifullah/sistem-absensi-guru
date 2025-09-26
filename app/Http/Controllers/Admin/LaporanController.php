@@ -11,7 +11,13 @@ use Illuminate\Support\Carbon;
 use App\Models\KalenderBlok;
 use App\Models\JadwalPelajaran;
 use App\Models\MasterJamPelajaran;
-// use Maatwebsite\Excel\Facades\Excel; // (Nanti untuk export)
+use App\Exports\ArsipLogbookExport;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LaporanIndividuExport;
+use App\Exports\LaporanBulananExport;
+use App\Exports\LaporanMingguanExport;
+
+
 
 class LaporanController extends Controller
 {
@@ -170,6 +176,13 @@ public function realtime(Request $request)
     ]);
     
 }
+/**
+ * Menangani download export arsip logbook.
+ */
+public function exportArsip()
+{
+    return Excel::download(new ArsipLogbookExport, 'arsip-logbook-piket.xlsx');
+}
 
     /**
      * Menampilkan arsip logbook piket
@@ -185,21 +198,66 @@ public function realtime(Request $request)
     // --- METODE UNTUK EXPORT EXCEL (KITA BUAT NANTI) ---
 
     public function exportBulanan(Request $request)
-    {
-        // TODO: Panggil Export Class untuk Laporan Bulanan
-        return 'Fitur export bulanan sedang dibuat.';
-    }
+{
+    // 1. Validasi filter
+    $request->validate([
+        'bulan' => 'required|integer|between:1,12',
+        'tahun' => 'required|integer|min:2000',
+    ]);
+
+    $bulan = (int) $request->bulan;
+    $tahun = (int) $request->tahun;
+
+    // 2. Buat nama file dinamis
+    $namaBulan = \Carbon\Carbon::create()->month($bulan)->isoFormat('MMMM');
+    $namaFile = "laporan_bulanan_{$namaBulan}_{$tahun}.xlsx";
+
+    // 3. Panggil Export Class dan kirimkan filternya
+    return Excel::download(new LaporanBulananExport($bulan, $tahun), $namaFile);
+}
 
     public function exportMingguan(Request $request)
-    {
-        // TODO: Panggil Export Class untuk Laporan Mingguan
-        return 'Fitur export mingguan sedang dibuat.';
-    }
+{
+    // 1. Validasi filter
+    $request->validate([
+        'tanggal_mulai' => 'required|date',
+        'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+    ]);
 
-    public function exportIndividu(Request $request)
-    {
-        // TODO: Panggil Export Class untuk Laporan Individu
-        return 'Fitur export individu sedang dibuat.';
-    }
+    $tanggalMulai = $request->tanggal_mulai;
+    $tanggalSelesai = $request->tanggal_selesai;
+
+    // 2. Buat nama file dinamis
+    $namaFile = "laporan_mingguan_{$tanggalMulai}_sd_{$tanggalSelesai}.xlsx";
+
+    // 3. Panggil Export Class dan kirimkan filternya
+    return Excel::download(new LaporanMingguanExport($tanggalMulai, $tanggalSelesai), $namaFile);
+}
+
+    /**
+ * Menangani download export laporan individu.
+ */
+public function exportIndividu(Request $request)
+{
+    // 1. Validasi filter (wajib ada)
+    $request->validate([
+        'data_guru_id' => 'required|exists:data_guru,id',
+        'tanggal_mulai' => 'required|date',
+        'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+    ]);
+
+    // 2. Ambil data filter dari request
+    $guruId = $request->data_guru_id;
+    $tanggalMulai = $request->tanggal_mulai;
+    $tanggalSelesai = $request->tanggal_selesai;
+
+    // (Opsional) Ambil nama guru untuk nama file agar lebih deskriptif
+    $guru = DataGuru::findOrFail($guruId);
+    $namaGuruClean = \Illuminate\Support\Str::slug($guru->nama_guru, '_'); // ganti spasi jadi _
+    $namaFile = "laporan_individu_{$namaGuruClean}_{$tanggalMulai}_sd_{$tanggalSelesai}.xlsx";
+
+    // 3. Panggil Export Class dan kirimkan filternya ke constructor
+    return Excel::download(new LaporanIndividuExport($guruId, $tanggalMulai, $tanggalSelesai), $namaFile);
+}
     
 }
