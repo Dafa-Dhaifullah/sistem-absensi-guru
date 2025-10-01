@@ -43,6 +43,20 @@
                                 <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                             </div>
 
+                            <div class="mt-4">
+    <x-input-label for="role" :value="__('Hak Akses (Role)')" />
+    <select id="role" name="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+        <option value="admin" @if(old('role', $user->role) == 'admin') selected @endif>Admin (TU)</option>
+        <option value="kepala_sekolah" @if(old('role', $user->role) == 'kepala_sekolah') selected @endif>Kepala Sekolah</option>
+        <option value="piket" @if(old('role', $user->role) == 'piket') selected @endif>Guru Piket</option>
+        <option value="guru" @if(old('role', $user->role) == 'guru') selected @endif>Guru Umum</option>
+    </select>
+    <x-input-error :messages="$errors->get('role')" class="mt-2" />
+</div>
+
+
+                    
+
                             <div class="flex items-center gap-4 mt-6">
                                 <x-primary-button>{{ __('Update') }}</x-primary-button>
                                 <a href="{{ route('admin.akun-piket.index') }}" class="text-gray-600 hover:text-gray-900">{{ __('Batal') }}</a> </div>

@@ -21,7 +21,7 @@
                         <ul class="mt-2 list-disc list-inside text-sm">
                             @foreach($guruWarning as $guru)
                                 <li>
-                                    <strong>{{ $guru->nama_guru }}</strong> 
+                                    <strong>{{ $guru->name }}</strong> 
                                     (Total {{ $guru->laporan_harian_count }} kali tidak hadir)
                                 </li>
                             @endforeach
@@ -54,36 +54,32 @@
 
             <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900">Pintasan Manajemen Data Master</h3>
-                    
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <a href="{{ route('admin.data-guru.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Data Guru</div>
-                            <div class="text-sm text-gray-600">Kelola daftar master guru.</div>
+                    <h3 class="text-lg font-medium text-gray-900">Pintasan Manajemen Data Pengguna</h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'admin']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-red-400 hover:border-red-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Data Admin</div>
                         </a>
-                        <a href="{{ route('admin.akun-piket.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Akun Piket</div>
-                            <div class="text-sm text-gray-600">Kelola akun login untuk guru piket.</div>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-purple-400 hover:border-purple-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Data Kepala Sekolah</div>
                         </a>
-                        <a href="{{ route('admin.akun-admin.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Akun Admin</div>
-                            <div class="text-sm text-gray-600">Kelola akun admin lain.</div>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'piket']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-yellow-400 hover:border-yellow-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Data Guru Piket</div>
+                        </a>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'guru']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-blue-400 hover:border-blue-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Data Guru Umum</div>
                         </a>
                     </div>
                     
-                    <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Manajemen Jadwal</h3>
+                    <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Manajemen Jadwal (Otak Sistem)</h3>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="block p-6 bg-yellow-50 hover:bg-yellow-100 rounded-lg border-l-4 border-yellow-400 shadow-sm hover:border-yellow-500 transition-colors">
-                            <div class="font-semibold text-yellow-800">Manajemen Jadwal Pelajaran</div>
-                            <div class="text-sm text-yellow-600">Atur jadwal mengajar, blok, dan jam.</div>
+                        <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="block p-6 bg-gray-50 hover:bg-gray-100 rounded-lg border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Manajemen Jadwal Pelajaran (Inti)</div>
                         </a>
                         <a href="{{ route('admin.jadwal-piket.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
                             <div class="font-semibold text-gray-800">Manajemen Jadwal Piket</div>
-                            <div class="text-sm text-gray-600">Atur template piket mingguan.</div>
                         </a>
                         <a href="{{ route('admin.kalender-blok.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
                             <div class="font-semibold text-gray-800">Manajemen Kalender Blok</div>
-                            <div class="text-sm text-gray-600">Atur rentang tanggal Minggu 1 & 2.</div>
                         </a>
                     </div>
 

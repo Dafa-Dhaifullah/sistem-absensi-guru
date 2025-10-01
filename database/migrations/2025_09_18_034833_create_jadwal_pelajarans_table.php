@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('jadwal_pelajaran', function (Blueprint $table) {
         $table->id();
         // data_guru_id adalah ID dari tabel 'data_guru'
-        $table->foreignId('data_guru_id')->constrained('data_guru')->onDelete('cascade');
+        $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
         $table->string('mata_pelajaran')->nullable();
         $table->string('kelas');
         $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']);

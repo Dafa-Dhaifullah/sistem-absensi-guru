@@ -9,7 +9,10 @@ use App\Http\Controllers\ProfileController;
 |--------------------------------------------------------------------------
 | Kita kumpulkan semua 'use' statement di atas agar rapi.
 */
-
+use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
+use App\Http\Controllers\Guru\AbsenController;
+use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Admin\PenggunaController;
 // Controller Admin (Tahap 3, 4, 6)
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin\DashboardAdminController; 
@@ -43,19 +46,19 @@ Route::redirect('/', '/login');
  // Pastikan ini ada di atas
 
 // ... Rute lain ...
+// RUTE BARU UNTUK QR CODE
+// Halaman untuk menampilkan QR di monitor (Kios)
+Route::get('/display/qr-kios', [QrCodeController::class, 'showKios'])->name('display.qr-kios');
+// API internal untuk menghasilkan token baru (dipanggil oleh JavaScript)
+Route::get('/qr-code/generate', [QrCodeController::class, 'generateToken'])->name('qrcode.generate');
 
 Route::get('/dashboard', function () {
-
-$role = auth()->user()->role;
-
-    if ($role == 'admin') {
-        return redirect()->route('admin.dashboard');
-    } elseif ($role == 'piket') {
-        return redirect()->route('piket.dashboard'); // <-- INI YANG TERJADI
-    } else {
-        return view('dashboard');
-    }
-
+    $role = auth()->user()->role;
+    if ($role == 'admin') { return redirect()->route('admin.dashboard'); } 
+    elseif ($role == 'kepala_sekolah') { /* TODO: Arahkan ke dashboard kepsek */ }
+    elseif ($role == 'piket') { return redirect()->route('piket.dashboard'); } 
+    elseif ($role == 'guru') { return redirect()->route('guru.dashboard'); } // <-- INI
+    else { return view('dashboard'); }
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 
@@ -84,10 +87,8 @@ Route::get('data-guru/import', [DataGuruController::class, 'showImportForm'])->n
 Route::post('data-guru/import', [DataGuruController::class, 'importExcel'])->name('data-guru.import.excel');
 
     // Tahap 3: CRUD Sederhana
-    Route::resource('data-guru', DataGuruController::class);
-    Route::resource('akun-admin', AkunAdminController::class);
-    Route::resource('akun-piket', AkunPiketController::class);
-    Route::post('akun-piket/{user}/reset-password', [AkunPiketController::class, 'resetPassword'])->name('akun-piket.resetPassword');
+    Route::resource('pengguna', PenggunaController::class);
+Route::post('pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.resetPassword');
     // Tahap 4: CRUD Kompleks (Otak Sistem)
     // (Kita daftarkan rutenya sekarang, walau controllernya belum dibuat)
   // TAMBAHKAN 3 BARIS INI
@@ -138,5 +139,19 @@ Route::middleware(['auth', 'role:piket'])->prefix('piket')->name('piket.')->grou
 });
 Route::get('/display/jadwal', [DisplayController::class, 'jadwalRealtime'])->name('display.jadwal');
 
+// ======================================================================
+// === 6. GRUP RUTE GURU (BARU) ===
+// ======================================================================
+// URL-nya akan berawalan /guru/...
+Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
+
+    // Dasbor utama guru
+    Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
+
+    // Proses submit absensi
+    Route::post('/absen', [AbsenController::class, 'store'])->name('absen.store');
+
+    // (Nanti kita tambahkan rute untuk riwayat absen pribadi)
+});
 // 6. Rute Autentikasi (Bawaan Breeze, HARUS di paling bawah)
 require __DIR__.'/auth.php';

@@ -9,11 +9,11 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
+    public function up(): void
 {
-    Schema::table('laporan_harian', function (Blueprint $table) {
-        // Tambahkan aturan: Kombinasi tanggal dan data_guru_id HARUS unik.
-        $table->unique(['tanggal', 'user_id']);
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('nip')->nullable()->unique()->after('email');
+        $table->string('no_wa', 20)->nullable()->after('nip');
     });
 }
 
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('laporan_harian', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             //
         });
     }

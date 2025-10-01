@@ -12,8 +12,7 @@ return new class extends Migration
    public function up(): void
 {
     Schema::table('laporan_harian', function (Blueprint $table) {
-        // Tambahkan aturan: Kombinasi tanggal dan data_guru_id HARUS unik.
-        $table->unique(['tanggal', 'user_id']);
+        $table->dropColumn(['latitude_absen', 'longitude_absen']);
     });
 }
 

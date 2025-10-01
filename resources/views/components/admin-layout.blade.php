@@ -84,30 +84,39 @@
                     <hr class="border-gray-600 my-2">
                     <li class="px-3 pb-1 text-xs font-semibold text-gray-400 uppercase">Data Master</li>
                     
-                    <li>
-                        <a href="{{ route('admin.data-guru.index') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
-                            <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
-                                <path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1v-2a6.957 6.957 0 0 1 1.264-4H0A1 1 0 0 1 0 9v-1a1 1 0 0 1 1-1h1.264A6.957 6.957 0 0 1 0 3V1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a6.957 6.957 0 0 1-1.264 4H14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1Zm-5-4q0 .309-.034.616A6.97 6.97 0 0 1 10 9.616v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 16.616v-4.768a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 9.616V6.384a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 4.384v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 11.384Z"/>
-                            </svg>
-                            <span class="ms-3">Manajemen Data Guru</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.akun-piket.index') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
-                            <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 14 18">
-                                <path d="M7 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm2 1H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/>
-                            </svg>
-                            <span class="ms-3">Manajemen Akun Piket</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.akun-admin.index') }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
-                            <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
-                            </svg>
-                            <span class="ms-3">Manajemen Akun Admin</span>
-                        </a>
-                    </li>
+                  <li>
+    <a href="{{ route('admin.pengguna.index', ['role' => 'admin']) }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+        <svg class="w-5 h-5 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+        </svg>
+        <span class="ms-3">Data Admin</span>
+    </a>
+</li>
+<li>
+    <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+         <svg class="w-5 h-5 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 14 18">
+            <path d="M7 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm2 1H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/>
+        </svg>
+        <span class="ms-3">Data Kepala Sekolah</span>
+    </a>
+</li>
+<li>
+    <a href="{{ route('admin.pengguna.index', ['role' => 'piket']) }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+        <svg class="w-5 h-5 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/>
+        </svg>
+        <span class="ms-3">Data Guru Piket</span>
+    </a>
+</li>
+<li>
+    <a href="{{ route('admin.pengguna.index', ['role' => 'guru']) }}" class="flex items-center p-2 text-white rounded-lg hover:bg-gray-700 group">
+        <svg class="w-5 h-5 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+            <path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1v-2a6.957 6.957 0 0 1 1.264-4H0A1 1 0 0 1 0 9v-1a1 1 0 0 1 1-1h1.264A6.957 6.957 0 0 1 0 3V1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a6.957 6.957 0 0 1-1.264 4H14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1Zm-5-4q0 .309-.034.616A6.97 6.97 0 0 1 10 9.616v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 16.616v-4.768a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 9.616V6.384a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 4.384v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 11.384Z"/>
+        </svg>
+        <span class="ms-3">Data Guru Umum</span>
+    </a>
+</li>
+                    
 
                     <hr class="border-gray-600 my-2">
                     <li class="px-3 pb-1 text-xs font-semibold text-gray-400 uppercase">Sistem Inti</li>

@@ -3,43 +3,37 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\DataGuru;
 use App\Models\JadwalPelajaran;
-use App\Models\User;
+use App\Models\User; // <-- Menggunakan model User
 use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
 {
     public function index()
     {
-        // --- DATA STATISTIK (SAMA SEPERTI SEBELUMNYA) ---
-        $jumlahGuru = DataGuru::count();
+        // REVISI: Hitung guru dari tabel 'users'
+        $jumlahGuru = User::whereIn('role', ['guru', 'piket'])->count(); 
         $jumlahAkunPiket = User::where('role', 'piket')->count();
         $jumlahJadwal = JadwalPelajaran::count();
 
-        // ==========================================================
-        // ## LOGIKA BARU UNTUK NOTIFIKASI WARNING (GABUNGAN) ##
-        // ==========================================================
-
-        // Tentukan status yang dihitung 'tidak hadir'
+        // REVISI: Logika notifikasi sekarang menggunakan relasi dari User
         $statusTidakHadir = ['Sakit', 'Izin', 'Alpa']; 
         $batasAbsen = 4;
 
-        // Query untuk mencari guru yang punya total S+I+A >= 4 kali bulan ini
-        $guruWarning = DataGuru::withCount(['laporanHarian' => function ($query) use ($statusTidakHadir) {
-            $query->whereIn('status', $statusTidakHadir)
-                  ->whereMonth('tanggal', now()->month)
-                  ->whereYear('tanggal', now()->year);
-        }])->having('laporan_harian_count', '>=', $batasAbsen)->get();
+        $guruWarning = User::whereIn('role', ['guru', 'piket']) // Hanya cek guru
+            ->whereHas('laporanHarian', function ($query) use ($statusTidakHadir) {
+                $query->whereIn('status', $statusTidakHadir)
+                      ->whereMonth('tanggal', now()->month)
+                      ->whereYear('tanggal', now()->year);
+            }, '>=', $batasAbsen)
+            ->withCount(['laporanHarian' => function ($query) use ($statusTidakHadir) {
+                $query->whereIn('status', $statusTidakHadir)
+                      ->whereMonth('tanggal', now()->month)
+                      ->whereYear('tanggal', now()->year);
+            }])->get();
 
-        // ==========================================================
-
-        // Kirim semua data ke view
-        return view('admin.dashboard', [
-            'jumlahGuru' => $jumlahGuru,
-            'jumlahAkunPiket' => $jumlahAkunPiket,
-            'jumlahJadwal' => $jumlahJadwal,
-            'guruWarning' => $guruWarning, // <-- Kirim data (sekarang hanya 1 variabel)
-        ]);
+        return view('admin.dashboard', compact(
+            'jumlahGuru', 'jumlahAkunPiket', 'jumlahJadwal', 'guruWarning'
+        ));
     }
 }

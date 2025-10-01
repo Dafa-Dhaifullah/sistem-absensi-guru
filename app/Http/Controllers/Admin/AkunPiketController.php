@@ -13,11 +13,16 @@ class AkunPiketController extends Controller
     /**
      * Menampilkan daftar akun dengan role 'piket'.
      */
-    public function index()
-    {
-        $semuaPiket = User::where('role', 'piket')->latest()->paginate(10);
-        return view('admin.akun_piket.index', ['semuaPiket' => $semuaPiket]);
-    }
+   public function index()
+{
+    // Ambil SEMUA pengguna, urutkan berdasarkan role, lalu nama
+    $semuaPengguna = User::orderBy('role', 'asc')
+                           ->orderBy('name', 'asc')
+                           ->paginate(15);
+
+    // Ganti 'akun_piket' menjadi 'akun_pengguna' jika Anda sudah mengganti nama view
+    return view('admin.akun_piket.index', ['semuaPengguna' => $semuaPengguna]);
+}
 
     /**
      * Menampilkan form untuk menambah akun piket baru.
@@ -30,24 +35,25 @@ class AkunPiketController extends Controller
     /**
      * Menyimpan akun piket baru.
      */
-    public function store(Request $request)
+   public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-        'username' => ['required', 'string', 'max:255', 'unique:'.User::class], // Pastikan username ada
-        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class], // <-- REVISI DI SINI
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'username' => ['required', 'string', 'max:255', 'unique:'.User::class],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['required', 'in:admin,kepala_sekolah,piket,guru'], // <-- VALIDASI BARU
         ]);
 
         User::create([
             'name' => $request->name,
-        'username' => $request->username,
-        'email' => $request->email, // <-- REVISI DI SINI
-        'password' => Hash::make($request->password),
-        'role' => 'piket', 
+            'username' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role, // <-- AMBIL DARI FORM
         ]);
 
-        return redirect()->route('admin.akun-piket.index')->with('success', 'Akun piket berhasil ditambahkan.');
+        return redirect()->route('admin.akun-piket.index')->with('success', 'Akun pengguna berhasil ditambahkan.');
     }
 
     /**
@@ -76,15 +82,17 @@ class AkunPiketController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-        'username' => ['required', 'string', 'max:255', 'unique:'.User::class.',username,'.$user->id], // Validasi unik
-        'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id], // <-- REVISI DI SINI
-        'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+            'username' => ['required', 'string', 'max:255', 'unique:'.User::class.',username,'.$user->id],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+            'role' => ['required', 'in:admin,kepala_sekolah,piket,guru'], // <-- VALIDASI BARU
         ]);
 
         $dataUpdate = [
             'name' => $request->name,
-        'username' => $request->username,
-        'email' => $request->email, 
+            'username' => $request->username,
+            'email' => $request->email,
+            'role' => $request->role, // <-- AMBIL DARI FORM
         ];
 
         if ($request->filled('password')) {
@@ -93,9 +101,8 @@ class AkunPiketController extends Controller
 
         $user->update($dataUpdate);
 
-        return redirect()->route('admin.akun-piket.index')->with('success', 'Akun piket berhasil diperbarui.');
+        return redirect()->route('admin.akun-piket.index')->with('success', 'Akun pengguna berhasil diperbarui.');
     }
-
     /**
      * Menghapus akun piket.
      */
