@@ -27,9 +27,7 @@
                                 <x-text-input id="tahun" class="block mt-1 w-full" type="number" name="tahun" :value="$tahun" required />
                             </div>
                             <div class="flex items-end">
-                                <x-primary-button type="submit">
-                                    {{ __('Tampilkan') }}
-                                </x-primary-button>
+                                <x-primary-button type="submit">{{ __('Tampilkan') }}</x-primary-button>
                             </div>
                         </div>
                     </form>
@@ -38,13 +36,11 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
                             Menampilkan Laporan: {{ \Carbon\Carbon::create()->month($bulan)->isoFormat('MMMM') }} {{ $tahun }}
                         </h3>
-                        <a href="{{ route('admin.laporan.export.bulanan', ['bulan' => $bulan, 'tahun' => $tahun]) }}"
-                           class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
+                        <a href="{{ route('admin.laporan.export.bulanan', ['bulan' => $bulan, 'tahun' => $tahun]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
                         </a>
                     </div>
@@ -54,11 +50,9 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Guru</th>
-                                    
                                     @for ($i = 1; $i <= $daysInMonth; $i++)
                                         <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">{{ $i }}</th>
                                     @endfor
-                                    
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 border-r">H</th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 border-r">S</th>
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 border-r">I</th>
@@ -67,21 +61,17 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                
                                 @forelse ($semuaGuru as $guru)
                                     <tr>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $guru->nama_guru }}</td>
-
+                                        <!-- REVISI: Panggil kolom 'name' dari model User -->
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $guru->name }}</td>
                                         @for ($i = 1; $i <= $daysInMonth; $i++)
                                             @php
-                                                // Buat tanggal
                                                 $tanggalCek = sprintf('%s-%s-%s', $tahun, str_pad($bulan, 2, '0', STR_PAD_LEFT), str_pad($i, 2, '0', STR_PAD_LEFT));
-                                                // Cari laporan di tanggal itu (ini menggunakan relasi yang sudah di-load controller)
                                                 $laporan = $guru->laporanHarian->firstWhere('tanggal', $tanggalCek);
                                                 $status = $laporan ? $laporan->status : '';
                                                 
-                                                // Tentukan warna cell
-                                                $bgColor = 'bg-white'; // Default (Tidak ada jadwal)
+                                                $bgColor = 'bg-white';
                                                 if ($status == 'Hadir') $bgColor = 'bg-blue-100';
                                                 if ($status == 'Sakit') $bgColor = 'bg-green-100 text-green-800';
                                                 if ($status == 'Izin') $bgColor = 'bg-yellow-100 text-yellow-800';
@@ -92,7 +82,6 @@
                                                 {{ $status ? substr($status, 0, 1) : '-' }}
                                             </td>
                                         @endfor
-                                        
                                         @php
                                             $totalHadir = $guru->laporanHarian->where('status', 'Hadir')->count();
                                             $totalSakit = $guru->laporanHarian->where('status', 'Sakit')->count();
@@ -105,20 +94,13 @@
                                         <td class="px-2 py-3 text-center text-xs font-medium border-r bg-yellow-50">{{ $totalIzin }}</td>
                                         <td class="px-2 py-3 text-center text-xs font-medium border-r bg-red-50">{{ $totalAlpa }}</td>
                                         <td class="px-2 py-3 text-center text-xs font-medium bg-gray-100">{{ $totalDL }}</td>
-
                                     </tr>
                                 @empty
-                                    <tr>
-                                        <td colspan="{{ $daysInMonth + 6 }}" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                            Belum ada data guru.
-                                        </td>
-                                    </tr>
+                                    <tr><td colspan="{{ $daysInMonth + 6 }}" class="px-6 py-4 text-center text-gray-500">Belum ada data guru.</td></tr>
                                 @endforelse
-
                             </tbody>
                         </table>
                     </div>
-
                 </div>
             </div>
         </div>

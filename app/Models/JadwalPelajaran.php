@@ -8,13 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 class JadwalPelajaran extends Model
 {
     use HasFactory;
-    protected $table = 'jadwal_pelajaran'; // <-- Tambahkan ini
-    protected $guarded = []; // <-- Tambahkan ini
-    
-    // (Ini penting untuk query di controller)
-    public function dataGuru()
-    
+
+    /**
+     * Nama tabel yang digunakan.
+     */
+    protected $table = 'jadwal_pelajaran';
+
+    /**
+     * Mass assignment.
+     */
+    protected $guarded = [];
+
+    /**
+     * ==========================================================
+     * ## INI RELASI YANG HILANG / PERLU DIPERBAIKI ##
+     * ==========================================================
+     * Mendefinisikan bahwa satu JadwalPelajaran dimiliki oleh satu User.
+     */
+    public function user()
     {
-        return $this->belongsTo(DataGuru::class, 'data_guru_id');
+        // Sambungkan ke model User, foreign key-nya adalah 'user_id'
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

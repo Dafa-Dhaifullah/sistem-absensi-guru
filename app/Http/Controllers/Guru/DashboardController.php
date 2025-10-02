@@ -23,31 +23,28 @@ class DashboardController extends Controller
         ];
         $hariIni = $hariMap[$today->format('l')];
 
-        // Ambil jadwal guru yang login HARI INI
-        $jadwalHariIni = collect();
-        if ($user->dataGuru) {
-            $jadwalHariIni = $user->dataGuru->jadwalPelajaran()
-                ->where('hari', $hariIni)
-                ->orderBy('jam_ke', 'asc')
-                ->get();
-        }
+        // ==========================================================
+        // ## REVISI DI SINI: Panggil relasi langsung dari $user ##
+        // ==========================================================
+        $jadwalHariIni = $user->jadwalPelajaran() // <-- TIDAK LAGI PAKAI ->dataGuru
+            ->where('hari', $hariIni)
+            ->orderBy('jam_ke', 'asc')
+            ->get();
 
-        // Cek laporan absensi hari ini
-        $laporanHariIni = null;
-        if ($user->dataGuru) {
-            $laporanHariIni = LaporanHarian::where('data_guru_id', $user->dataGuru->id)
-                ->whereDate('tanggal', $today->toDateString())
-                ->first();
-        }
+        // ==========================================================
+        // ## REVISI DI SINI: Gunakan $user->id langsung ##
+        // ==========================================================
+        $laporanHariIni = LaporanHarian::where('user_id', $user->id) // <-- Ganti dari data_guru_id
+            ->whereDate('tanggal', $today->toDateString())
+            ->first();
 
-        // Ambil data guru piket hari ini
+        // Ambil data guru piket hari ini (logika ini sudah benar)
         $sesiSekarang = ($today->hour < 12) ? 'Pagi' : 'Siang';
         $piketIds = JadwalPiket::where('hari', $hariIni)
                         ->where('sesi', $sesiSekarang)
                         ->pluck('user_id');
         $guruPiketHariIni = User::whereIn('id', $piketIds)
-                            ->with('dataGuru')
-                            ->get();
+                            ->get(); // Dihapus ->with('dataGuru') karena sudah di User
 
         return view('guru.dashboard', [
             'jadwalHariIni' => $jadwalHariIni,

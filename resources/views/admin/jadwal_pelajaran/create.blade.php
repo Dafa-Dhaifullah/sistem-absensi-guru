@@ -25,18 +25,18 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             <div class="space-y-6">
-                                <div>
-                                    <x-input-label for="data_guru_id" :value="__('Guru Pengajar')" />
-                                    <select id="data_guru_id" name="data_guru_id" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                        <option value="" disabled selected>-- Pilih Guru --</option>
-                                        @foreach ($dataGuru as $guru)
-                                            <option value="{{ $guru->id }}" {{ old('data_guru_id') == $guru->id ? 'selected' : '' }}>
-                                                {{ $guru->nama_guru }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <x-input-error :messages="$errors->get('data_guru_id')" class="mt-2" />
-                                </div>
+                               <div>
+    <x-input-label for="user_id" :value="__('Guru Pengajar')" />
+    <select id="user_id" name="user_id" class="block mt-1 w-full ..." required>
+        <option value="" disabled selected>-- Pilih Guru --</option>
+        @foreach ($daftarGuru as $guru)
+            <option value="{{ $guru->id }}" {{ old('user_id') == $guru->id ? 'selected' : '' }}>
+                {{ $guru->name }}
+            </option>
+        @endforeach
+    </select>
+    <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
+</div>
 
                                 <div>
                                     <x-input-label for="hari" :value="__('Hari')" />

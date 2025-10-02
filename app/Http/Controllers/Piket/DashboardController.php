@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Piket;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\KalenderBlok;
-use App\Models\LaporanHarian;
 use App\Models\JadwalPelajaran;
 use App\Models\JadwalPiket;
-use App\Models\MasterJamPelajaran; // Biarkan ini, tidak apa-apa
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
+use App\Models\LaporanHarian;
+use App\Models\User; // Menggunakan model User
 
 class DashboardController extends Controller
 {
@@ -27,49 +26,45 @@ class DashboardController extends Controller
         $sesiSekarang = ($today->hour < 12) ? 'Pagi' : 'Siang';
 
         // 2. Login Lock (Ini sudah benar)
-        $userBolehPiket = \App\Models\JadwalPiket::where('hari', $hariIni)
+        $userBolehPiket = JadwalPiket::where('hari', $hariIni)
                                     ->where('sesi', $sesiSekarang)
-                                    ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                                    ->where('user_id', Auth::id())
                                     ->exists();
         
-        if (auth()->user()->role != 'admin' && !$userBolehPiket) {
-            \Illuminate\Support\Facades\Auth::guard('web')->logout();
+        if (Auth::user()->role != 'admin' && !$userBolehPiket) {
+            Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
             return redirect('/login')->withErrors(['username' => 'Akses ditolak. Anda tidak terjadwal piket untuk hari/sesi ini.']);
         }
 
-        // ========================================================
-        // ## 3. LOGIKA DASHBOARD (VERSI PALING BARU & AMAN) ##
-        // ========================================================
-
-        // 3a. Ambil SEMUA guru yang wajib hadir hari ini (tanpa kecuali)
-        $tipeMinggu = \App\Models\KalenderBlok::where('tanggal_mulai', '<=', $today)
+        // 3. Logika Dashboard (Direvisi)
+        $tipeMinggu = KalenderBlok::where('tanggal_mulai', '<=', $today)
                                   ->where('tanggal_selesai', '>=', $today)
                                   ->first();
+        
         $blokValid = ['Setiap Minggu'];
         if ($tipeMinggu) {
             if ($tipeMinggu->tipe_minggu == 'Minggu 1') $blokValid[] = 'Hanya Minggu 1';
             if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
         }
 
-        // Ambil ID guru yang wajib hadir
-        $guruWajibHadirIds = \App\Models\JadwalPelajaran::where('hari', $hariIni)
+        // REVISI: Ambil user_id, bukan data_guru_id
+        $jadwalGuruIds = JadwalPelajaran::where('hari', $hariIni)
                             ->whereIn('tipe_blok', $blokValid)
-                            ->pluck('data_guru_id')
+                            ->pluck('user_id')
                             ->unique();
 
-        // Ambil data lengkap guru berdasarkan ID di atas
-        $guruWajibHadir = \App\Models\DataGuru::whereIn('id', $guruWajibHadirIds)
-                            ->orderBy('nama_guru', 'asc')
+        // REVISI: Ambil data dari User, bukan DataGuru
+        $guruWajibHadir = User::whereIn('id', $jadwalGuruIds)
+                            ->where('role', 'guru') // Pastikan hanya guru umum
+                            ->orderBy('name', 'asc')
                             ->get();
 
-        // 3b. Ambil SEMUA laporan yang sudah tersimpan hari ini
-        $laporanHariIni = \App\Models\LaporanHarian::where('tanggal', $today->toDateString())
+        // REVISI: keyBy 'user_id'
+        $laporanHariIni = LaporanHarian::where('tanggal', $today->toDateString())
                             ->get()
-                            ->keyBy('data_guru_id');
-
-        // ========================================================
+                            ->keyBy('user_id');
 
         // 4. Tampilkan View
         return view('piket.dashboard', [

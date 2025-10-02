@@ -29,11 +29,19 @@
                     </div>
                     @endif
 
-                    <a href="{{ route('display.jadwal') }}" target="_blank" 
-                       class="block w-full p-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-150 mt-6">
-                        <h3 class="text-2xl font-bold">Luncurkan Monitor Real-time</h3>
-                        <p class="text-blue-100">Klik di sini untuk membuka halaman jadwal (untuk ditampilkan di monitor depan) di tab baru.</p>
-                    </a>
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <a href="{{ route('display.jadwal') }}" target="_blank" 
+                           class="block w-full p-6 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-150">
+                            <h3 class="text-2xl font-bold">Luncurkan Monitor Real-time</h3>
+                            <p class="text-indigo-100">Menampilkan status kehadiran guru saat ini.</p>
+                        </a>
+                        
+                        <a href="{{ route('display.qr-kios') }}" target="_blank" 
+                           class="block w-full p-6 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-800 transition duration-150">
+                            <h3 class="text-2xl font-bold">Tampilkan QR Code Absensi</h3>
+                            <p class="text-gray-300">Buka halaman ini di monitor/tablet untuk absensi.</p>
+                        </a>
+                    </div>
 
                     <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="p-4 bg-gray-50 rounded-lg shadow border-l-4 border-gray-300">

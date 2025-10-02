@@ -44,71 +44,72 @@
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Guru</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Kehadiran</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontak (WA)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-    @forelse ($guruWajibHadir as $guru)
-        <tr>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {{ $guru->nama_guru }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                
-                @php
-                    // Cek status tersimpan HARI INI (dari controller)
-                    $laporan = $laporanHariIni->get($guru->id);
-                    // Ini sudah benar (menggunakan : null)
-                    $statusTersimpan = $laporan ? $laporan->status : null;
-                @endphp
-
-                <select name="status_guru[{{ $guru->id }}]" 
-                        class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    
-                    <option value="" @if(!$statusTersimpan) selected @endif>-- Belum Diabsen --</option>
-                    
-                    <option value="Hadir" @if($statusTersimpan == 'Hadir') selected @endif>Hadir</option>
-                    <option value="Sakit" @if($statusTersimpan == 'Sakit') selected @endif>Sakit</option>
-                    <option value="Izin" @if($statusTersimpan == 'Izin') selected @endif>Izin</option>
-                    <option value="DL" @if($statusTersimpan == 'DL') selected @endif>Dinas Luar (DL)</option>
-                    <option value="Alpa" @if($statusTersimpan == 'Alpa') selected @endif>Alpa</option>
-                
-                </select>
-            </td>
-        </tr>
-    @empty
-        <tr>
-            <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                Tidak ada guru yang terjadwal hari ini.
-            </td>
-        </tr>
-    @endforelse
-</tbody>
+                                    @forelse ($guruWajibHadir as $guru)
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                <!-- REVISI: Gunakan $guru->name -->
+                                                {{ $guru->name }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @php
+                                                    $laporan = $laporanHariIni->get($guru->id);
+                                                    $statusTersimpan = $laporan ? $laporan->status : null;
+                                                @endphp
+                                                <select name="status_guru[{{ $guru->id }}]" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                                    <option value="" @if(!$statusTersimpan) selected @endif>-- Belum Diabsen --</option>
+                                                    <option value="Hadir" @if($statusTersimpan == 'Hadir') selected @endif>Hadir</option>
+                                                    <option value="Sakit" @if($statusTersimpan == 'Sakit') selected @endif>Sakit</option>
+                                                    <option value="Izin" @if($statusTersimpan == 'Izin') selected @endif>Izin</option>
+                                                    <option value="DL" @if($statusTersimpan == 'DL') selected @endif>Dinas Luar (DL)</option>
+                                                    <option value="Alpa" @if($statusTersimpan == 'Alpa') selected @endif>Alpa</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @if ($guru->no_wa)
+                                                    @php
+                                                        $waNumber = preg_replace('/^0/', '62', $guru->no_wa);
+                                                        $waLink = "https://wa.me/{$waNumber}";
+                                                    @endphp
+                                                    <a href="{{ $waLink }}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-green-500 ...">
+                                                        Hubungi
+                                                    </a>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                                                Tidak ada guru yang terjadwal hari ini.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
                             </table>
                         </div>
 
                         <div class="mt-8">
                             <h3 class="text-lg font-medium">Logbook Kejadian Harian (Opsional)</h3>
-                            
                             <div class="mt-4">
                                 <x-input-label for="kejadian_penting" :value="__('Kejadian Penting Hari Ini')" />
-                                <textarea id="kejadian_penting" name="kejadian_penting" rows="4" 
-                                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('kejadian_penting') }}</textarea>
+                                <textarea id="kejadian_penting" name="kejadian_penting" rows="4" class="mt-1 block w-full ...">{{ old('kejadian_penting') }}</textarea>
                             </div>
-                            
                             <div class="mt-4">
                                 <x-input-label for="tindak_lanjut" :value="__('Tindak Lanjut Penyelesaiannya')" />
-                                <textarea id="tindak_lanjut" name="tindak_lanjut" rows="4" 
-                                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ old('tindak_lanjut') }}</textarea>
+                                <textarea id="tindak_lanjut" name="tindak_lanjut" rows="4" class="mt-1 block w-full ...">{{ old('tindak_lanjut') }}</textarea>
                             </div>
                         </div>
 
                         <div class="mt-8 border-t pt-6">
-                            
-                            <x-primary-button type="submit" onclick="return confirm('Apakah Anda yakin ingin menyimpan laporan harian ini? Data tidak dapat diubah setelah disimpan.');">
-                                {{ __('Simpan & Kunci Laporan Harian') }}
+                            <x-primary-button type="submit">
+                                {{ __('Simpan Perubahan') }}
                             </x-primary-button>
                         </div>
-                        
                     </form>
                 </div>
             </div>
