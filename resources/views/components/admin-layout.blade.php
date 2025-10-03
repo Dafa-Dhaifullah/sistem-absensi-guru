@@ -15,17 +15,23 @@
 <body class="font-sans antialiased bg-gray-100">
 
 <div
-    x-data="{
-        // Desktop mini mode (ikon saja)
-        sidebarMini: false,
-        // Mobile open state
-        sidebarOpenMobile: false,
-        closeMobile() { this.sidebarOpenMobile = false },
-        toggleMini() { this.sidebarMini = !this.sidebarMini },
-    }"
-    x-on:keydown.escape.window="closeMobile()"
-    class="min-h-screen"
+  x-data="{
+    // mini (ikon saja) untuk desktop
+    sidebarMini: JSON.parse(localStorage.getItem('sidebarMini') ?? 'false'),
+    // overlay mobile
+    sidebarOpenMobile: false,
+
+    init() {
+      this.$watch('sidebarMini', v => localStorage.setItem('sidebarMini', JSON.stringify(v)));
+    },
+
+    toggleMini(){ this.sidebarMini = !this.sidebarMini },
+    closeMobile(){ this.sidebarOpenMobile = false },
+  }"
+  x-on:keydown.escape.window="closeMobile()"
+  class="min-h-screen"
 >
+
     <!-- TOPBAR -->
     <nav class="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
