@@ -89,6 +89,13 @@
                         <a href="{{ route('admin.kalender-blok.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
                             <div class="font-semibold text-gray-800">Manajemen Kalender Blok</div>
                         </a>
+                        <!-- ============================================== -->
+                        <!-- == TAMBAHKAN PINTASAN HARI LIBUR DI SINI == -->
+                        <!-- ============================================== -->
+                        <a href="{{ route('admin.hari-libur.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
+                            <div class="font-semibold text-gray-800">Manajemen Hari Libur</div>
+                        </a>
+                        <!-- ============================================== -->
                     </div>
 
                     <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Laporan</h3>

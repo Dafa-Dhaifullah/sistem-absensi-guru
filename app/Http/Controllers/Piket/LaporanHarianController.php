@@ -17,66 +17,45 @@ class LaporanHarianController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi input (Ini sudah benar)
+        // 1. Validasi
         $request->validate([
             'status_guru' => 'nullable|array', 
-            'status_guru.*' => 'nullable|in:Hadir,Sakit,Izin,DL,Alpa',
+            // REVISI: 'Hadir' DIHAPUS dari daftar status yang valid untuk override.
+            'status_guru.*' => 'nullable|in:Sakit,Izin,DL,Alpa',
             'kejadian_penting' => 'nullable|string',
             'tindak_lanjut' => 'nullable|string',
+        ],[
+            'status_guru.*.in' => 'Anda hanya dapat mengubah status menjadi Sakit, Izin, Alpa, atau DL.'
         ]);
 
-        $today = now('Asia/Jakarta');
-        $statusInput = $request->input('status_guru', []);
-
-        // ========================================================
-        // ## 2. SINKRONISASI LOGIKA QUERY ##
-        // (Logika ini disamakan persis dengan DashboardController)
-        // ========================================================
-        $hariMap = [
-            'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat',
-            'Saturday' => 'Sabtu',
-        ];
-        $hariIni = $hariMap[$today->format('l')];
+        $today = now('Asia/Jakarta')->toDateString();
         
-        $tipeMinggu = KalenderBlok::where('tanggal_mulai', '<=', $today)
-                                  ->where('tanggal_selesai', '>=', $today)
-                                  ->first();
-        
-        $blokValid = ['Setiap Minggu'];
-        if ($tipeMinggu) {
-            if ($tipeMinggu->tipe_minggu == 'Minggu 1') $blokValid[] = 'Hanya Minggu 1';
-            if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
-        }
-        
-        // REVISI: Ambil user_id, bukan data_guru_id
-        $guruWajibHadirIds = JadwalPelajaran::where('hari', $hariIni)
-                                ->whereIn('tipe_blok', $blokValid)
-                                ->pluck('user_id')
-                                ->unique();
-        // ========================================================
-
-        // 3. Simpan Laporan Harian (Logika ini sudah benar)
+        // Hanya proses data yang di-submit dari form
         if ($request->filled('status_guru')) {
             foreach ($request->status_guru as $idGuru => $status) {
+                
+                // Jika user memilih status (bukan '-- Belum Diabsen --')
                 if (!empty($status)) {
                     LaporanHarian::updateOrCreate(
-                        // REVISI: Gunakan user_id sebagai kunci
-                        ['tanggal' => $today->toDateString(), 'user_id' => $idGuru],
-                        ['status' => $status, 'diabsen_oleh' => auth()->id()] // Catat siapa yang mengabsenkan
+                        // Kunci
+                        ['tanggal' => $today, 'user_id' => $idGuru],
+                        // Data (catat siapa yang mengabsenkan)
+                        ['status' => $status, 'diabsen_oleh' => auth()->id()]
                     );
-                } else {
-                    LaporanHarian::where('tanggal', $today->toDateString())
-                                 // REVISI: Hapus berdasarkan user_id
+                } 
+                // Jika user memilih '-- Belum Diabsen --'
+                else {
+                    // Hapus record-nya agar kembali ke status default
+                    LaporanHarian::where('tanggal', $today)
                                  ->where('user_id', $idGuru)
                                  ->delete();
                 }
             }
         }
         
-        // 4. Simpan Logbook (Logika ini sudah benar)
+        // Simpan Logbook
         LogbookPiket::updateOrCreate(
-            ['tanggal' => $today->toDateString()],
+            ['tanggal' => $today],
             [
                 'kejadian_penting' => $request->kejadian_penting,
                 'tindak_lanjut' => $request->tindak_lanjut,
@@ -86,3 +65,4 @@ class LaporanHarianController extends Controller
         return redirect()->route('piket.dashboard')->with('success', 'Laporan berhasil diperbarui.');
     }
 }
+

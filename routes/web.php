@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\KalenderBlokController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\DisplayController;
+use App\Http\Controllers\Admin\HariLiburController;
 
 
 // Controller Piket (Tahap 5)
@@ -80,6 +81,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Dashboard Admin
    // Dashboard Admin
 Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
+
+Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
 
     // Rute untuk menampilkan form import
 Route::get('data-guru/import', [DataGuruController::class, 'showImportForm'])->name('data-guru.import.form');
