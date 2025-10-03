@@ -91,6 +91,31 @@ class PenggunaController extends Controller
         return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
+    // Method untuk menampilkan halaman form import
+public function showImportForm()
+{
+    return view('admin.pengguna.import');
+}
+
+// Method untuk memproses file Excel
+public function importExcel(Request $request)
+{
+    $request->validate(['file' => 'required|mimes:xlsx,xls']);
+
+    try {
+        Excel::import(new PenggunaImport, $request->file('file'));
+        return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diimpor!');
+    } catch (ValidationException $e) {
+        $failures = $e->failures();
+        $errorMessages = [];
+        foreach ($failures as $failure) {
+            // Pesan error akan lebih detail: Error di baris X: Pesan Error
+            $errorMessages[] = "Baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+        }
+        return redirect()->route('admin.pengguna.import.form')->with('import_errors', $errorMessages);
+    }
+}
+
     // Menghapus pengguna
     public function destroy(User $pengguna)
     {

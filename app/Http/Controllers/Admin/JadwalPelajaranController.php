@@ -4,29 +4,28 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\JadwalPelajaran;
-use App\Models\User; // <-- Menggunakan model User, bukan DataGuru
+use App\Models\User;
 use Illuminate\Http\Request;
+use App\Imports\JadwalPelajaranImport; // <-- Pastikan ini ada
+use Maatwebsite\Excel\Facades\Excel; // <-- Pastikan ini ada
+use Maatwebsite\Excel\Validators\ValidationException; // <-- Pastikan ini ada
 
 class JadwalPelajaranController extends Controller
 {
     public function index()
     {
-        // Ganti relasi dari 'dataGuru' menjadi 'user'
         $jadwal = JadwalPelajaran::with('user')->latest()->paginate(15);
         return view('admin.jadwal_pelajaran.index', ['semuaJadwal' => $jadwal]);
     }
 
     public function create()
     {
-        // Ambil data guru dari tabel 'users' dengan role 'guru' atau 'piket'
-        // Sekarang hanya mengambil pengguna dengan role 'guru'
-$daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+        $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
         return view('admin.jadwal_pelajaran.create', ['daftarGuru' => $daftarGuru]);
     }
 
     public function store(Request $request)
     {
-        // Ganti validasi 'data_guru_id' menjadi 'user_id'
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
             'mata_pelajaran' => 'nullable|string|max:255',
@@ -43,17 +42,20 @@ $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
         foreach ($jamKeArray as $jam) {
             $dataToCreate = $validatedData;
             $dataToCreate['jam_ke'] = $jam; 
-
             JadwalPelajaran::create($dataToCreate);
         }
 
         return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil ditambahkan.');
     }
 
+    public function show(JadwalPelajaran $jadwalPelajaran)
+    {
+        return redirect()->route('admin.jadwal-pelajaran.index');
+    }
+
     public function edit(JadwalPelajaran $jadwalPelajaran)
     {
-        // Sekarang hanya mengambil pengguna dengan role 'guru'
-$daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+        $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
         return view('admin.jadwal_pelajaran.edit', [
             'jadwal' => $jadwalPelajaran,
             'daftarGuru' => $daftarGuru
@@ -80,5 +82,33 @@ $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
     {
         $jadwalPelajaran->delete();
         return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil dihapus.');
+    }
+    
+    // --- METHOD UNTUK IMPORT ---
+
+    public function showImportForm()
+    {
+        return view('admin.jadwal_pelajaran.import');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new JadwalPelajaranImport, $request->file('file'));
+            
+            return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diimpor!');
+
+        } catch (ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Error di baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+            }
+            return redirect()->route('admin.jadwal-pelajaran.import.form')->with('error', 'Gagal mengimpor data. Detail: <br>' . implode('<br>', $errorMessages));
+        }
     }
 }

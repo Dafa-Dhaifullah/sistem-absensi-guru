@@ -10,12 +10,10 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
 class LaporanIndividuExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
 {
-    // Siapkan properti untuk menampung filter
     protected $guruId;
     protected $tanggalMulai;
     protected $tanggalSelesai;
 
-    // Buat constructor untuk menerima filter dari controller
     public function __construct(int $guruId, string $tanggalMulai, string $tanggalSelesai)
     {
         $this->guruId = $guruId;
@@ -23,22 +21,18 @@ class LaporanIndividuExport implements FromQuery, WithHeadings, WithMapping, Sho
         $this->tanggalSelesai = $tanggalSelesai;
     }
 
-    /**
-    * Mengambil data dari database berdasarkan filter.
-    */
     public function query()
     {
+        // Query tidak berubah
         return LaporanHarian::query()
-            ->where('data_guru_id', $this->guruId)
+            ->where('user_id', $this->guruId)
             ->whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai])
             ->orderBy('tanggal', 'asc');
     }
 
-    /**
-     * Ini akan menjadi baris header di file Excel.
-     */
     public function headings(): array
     {
+        // Header tidak berubah
         return [
             'Tanggal',
             'Hari',
@@ -47,15 +41,14 @@ class LaporanIndividuExport implements FromQuery, WithHeadings, WithMapping, Sho
     }
 
     /**
-     * Memetakan data dari setiap baris.
      * @param LaporanHarian $laporan
      */
     public function map($laporan): array
     {
+        // REVISI: Tambahkan locale('id_ID') untuk format hari
         return [
-            // Format tanggal agar mudah dibaca
             \Carbon\Carbon::parse($laporan->tanggal)->isoFormat('D MMMM YYYY'),
-            \Carbon\Carbon::parse($laporan->tanggal)->isoFormat('dddd'),
+            \Carbon\Carbon::parse($laporan->tanggal)->locale('id_ID')->isoFormat('dddd'),
             $laporan->status,
         ];
     }

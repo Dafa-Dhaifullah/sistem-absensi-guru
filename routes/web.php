@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+use App\Imports\PenggunaImport;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +66,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
 
     // Manajemen Data & Sistem Inti
+    Route::get('pengguna/import', [PenggunaController::class, 'showImportForm'])->name('pengguna.import.form');
+Route::post('pengguna/import', [PenggunaController::class, 'importExcel'])->name('pengguna.import.excel');
     Route::resource('pengguna', PenggunaController::class);
     Route::post('pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.resetPassword');
     
@@ -71,12 +76,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
     
     Route::resource('kalender-blok', KalenderBlokController::class);
+     // Rute Import
+    Route::get('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'showImportForm'])->name('jadwal-pelajaran.import.form');
+    Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'importExcel'])->name('jadwal-pelajaran.import.excel');
     Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
     Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
 
-    // Rute Import
-    Route::get('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'showImportForm'])->name('jadwal-pelajaran.import.form');
-    Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'importExcel'])->name('jadwal-pelajaran.import.excel');
 });
 
 // ======================================================================

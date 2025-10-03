@@ -18,6 +18,9 @@
     <a href="{{ route('admin.pengguna.create', ['role' => $role]) }}">
         <x-primary-button>{{ $label }}</x-primary-button>
     </a>
+    <a href="{{ route('admin.pengguna.import.form') }}">
+        <x-secondary-button>{{ __('Import Pengguna') }}</x-secondary-button>
+    </a>
     </div>
 
                     @if (session('success'))
