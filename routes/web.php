@@ -5,32 +5,24 @@ use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
-| Import Semua Controller Kita
+| Import Semua Controller
 |--------------------------------------------------------------------------
-| Kita kumpulkan semua 'use' statement di atas agar rapi.
 */
-use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
-use App\Http\Controllers\Guru\AbsenController;
-use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Admin\DashboardAdminController;
 use App\Http\Controllers\Admin\PenggunaController;
-// Controller Admin (Tahap 3, 4, 6)
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Admin\DashboardAdminController; 
-use App\Http\Controllers\Admin\DataGuruController;
-use App\Http\Controllers\Admin\AkunAdminController;
-use App\Http\Controllers\Admin\AkunPiketController;
 use App\Http\Controllers\Admin\JadwalPiketController;
 use App\Http\Controllers\Admin\KalenderBlokController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
+use App\Http\Controllers\Admin\HariLiburController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\DisplayController;
-use App\Http\Controllers\Admin\HariLiburController;
-
-
-// Controller Piket (Tahap 5)
-use App\Http\Controllers\Piket\DashboardController;
+use App\Http\Controllers\KepalaSekolah\DashboardController as KepalaSekolahDashboardController;
+use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
+use App\Http\Controllers\Guru\AbsenController;
+use App\Http\Controllers\Piket\DashboardController as PiketDashboardController;
 use App\Http\Controllers\Piket\LaporanHarianController;
 use App\Http\Controllers\Piket\GantiPasswordController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -38,123 +30,98 @@ use App\Http\Controllers\Piket\GantiPasswordController;
 |--------------------------------------------------------------------------
 */
 
-// 1. Rute Halaman Depan (Publik)
+// Rute Publik
 Route::redirect('/', '/login');
-
-// 2. Rute Dashboard (Breeze Asli) - KITA MODIFIKASI
-// Rute ini akan menjadi "Gerbang Otomatis" yang mengarahkan
-// user ke dashboard yang benar berdasarkan role mereka.
- // Pastikan ini ada di atas
-
-// ... Rute lain ...
-// RUTE BARU UNTUK QR CODE
-// Halaman untuk menampilkan QR di monitor (Kios)
-Route::get('/display/qr-kios', [QrCodeController::class, 'showKios'])->name('display.qr-kios');
-// API internal untuk menghasilkan token baru (dipanggil oleh JavaScript)
-Route::get('/qr-code/generate', [QrCodeController::class, 'generateToken'])->name('qrcode.generate');
-
-Route::get('/dashboard', function () {
-    $role = auth()->user()->role;
-    if ($role == 'admin') { return redirect()->route('admin.dashboard'); } 
-    elseif ($role == 'kepala_sekolah') { /* TODO: Arahkan ke dashboard kepsek */ }
-    elseif ($role == 'piket') { return redirect()->route('piket.dashboard'); } 
-    elseif ($role == 'guru') { return redirect()->route('guru.dashboard'); } // <-- INI
-    else { return view('dashboard'); }
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/display/jadwal', [DisplayController::class, 'jadwalRealtime'])->name('display.jadwal');
+Route::get('/display/qr-kios', [\App\Http\Controllers\QrCodeController::class, 'showKios'])->name('display.qr-kios');
+Route::get('/qr-code/generate', [\App\Http\Controllers\QrCodeController::class, 'generateToken'])->name('qrcode.generate');
 
 
-// 3. Rute Profil (Bawaan Breeze, biarkan saja)
+// Rute Autentikasi Umum
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Redirector Dashboard Utama
+    Route::get('/dashboard', function () {
+        $role = auth()->user()->role;
+        if ($role == 'admin') { return redirect()->route('admin.dashboard'); }
+        elseif ($role == 'kepala_sekolah') { return redirect()->route('kepala-sekolah.dashboard'); }
+        elseif ($role == 'piket') { return redirect()->route('piket.dashboard'); }
+        elseif ($role == 'guru') { return redirect()->route('guru.dashboard'); }
+        else { auth()->logout(); return redirect('/login'); } // Default
+    })->middleware(['verified'])->name('dashboard');
+});
+
+
+// ======================================================================
+// === GRUP RUTE HANYA UNTUK ADMIN ===
+// ======================================================================
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
+
+    // Manajemen Data & Sistem Inti
+    Route::resource('pengguna', PenggunaController::class);
+    Route::post('pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.resetPassword');
+    
+    Route::get('jadwal-piket', [JadwalPiketController::class, 'index'])->name('jadwal-piket.index');
+    Route::get('jadwal-piket/edit/{hari}/{sesi}', [JadwalPiketController::class, 'edit'])->name('jadwal-piket.edit');
+    Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
+    
+    Route::resource('kalender-blok', KalenderBlokController::class);
+    Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
+    Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
+
+    // Rute Import
+    Route::get('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'showImportForm'])->name('jadwal-pelajaran.import.form');
+    Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'importExcel'])->name('jadwal-pelajaran.import.excel');
 });
 
 // ======================================================================
-// === 4. GRUP RUTE ADMIN ===
+// === GRUP RUTE UNTUK ADMIN & KEPALA SEKOLAH (LAPORAN) ===
 // ======================================================================
-// Semua rute di grup ini HANYA bisa diakses oleh 'admin'
-// URL-nya akan berawalan /admin/...
-// Nama rutenya akan berawalan admin.... (misal: admin.data-guru.index)
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    
-    // Dashboard Admin
-   // Dashboard Admin
-Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name('admin.')->group(function () {
 
-Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
-
-    // Rute untuk menampilkan form import
-Route::get('data-guru/import', [DataGuruController::class, 'showImportForm'])->name('data-guru.import.form');
-// Rute untuk memproses file
-Route::post('data-guru/import', [DataGuruController::class, 'importExcel'])->name('data-guru.import.excel');
-
-    // Tahap 3: CRUD Sederhana
-    Route::resource('pengguna', PenggunaController::class);
-Route::post('pengguna/{user}/reset-password', [PenggunaController::class, 'resetPassword'])->name('pengguna.resetPassword');
-    // Tahap 4: CRUD Kompleks (Otak Sistem)
-    // (Kita daftarkan rutenya sekarang, walau controllernya belum dibuat)
-  // TAMBAHKAN 3 BARIS INI
-Route::get('jadwal-piket', [JadwalPiketController::class, 'index'])->name('jadwal-piket.index');
-Route::get('jadwal-piket/edit/{hari}/{sesi}', [JadwalPiketController::class, 'edit'])->name('jadwal-piket.edit');
-Route::put('jadwal-piket/update/{hari}/{sesi}', [JadwalPiketController::class, 'update'])->name('jadwal-piket.update');
-    Route::resource('kalender-blok', KalenderBlokController::class);
-    Route::get('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'showImportForm'])->name('jadwal-pelajaran.import.form');
-Route::post('jadwal-pelajaran/import', [JadwalPelajaranController::class, 'importExcel'])->name('jadwal-pelajaran.import.excel');
-    Route::resource('jadwal-pelajaran', JadwalPelajaranController::class);
-    // (Nanti di sini kita tambahkan rute untuk Import Excel)
-
-    // Tahap 6: Laporan
-    // (Kita daftarkan rutenya sekarang)
+    Route::get('laporan/realtime', [LaporanController::class, 'realtime'])->name('laporan.realtime');
     Route::get('laporan/bulanan', [LaporanController::class, 'bulanan'])->name('laporan.bulanan');
     Route::get('laporan/mingguan', [LaporanController::class, 'mingguan'])->name('laporan.mingguan');
     Route::get('laporan/individu', [LaporanController::class, 'individu'])->name('laporan.individu');
     Route::get('laporan/arsip', [LaporanController::class, 'arsip'])->name('laporan.arsip');
     
-    // Rute untuk Export Excel
+    // Rute Export Excel
     Route::get('laporan/export/bulanan', [LaporanController::class, 'exportBulanan'])->name('laporan.export.bulanan');
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
     Route::get('laporan/export/arsip', [LaporanController::class, 'exportArsip'])->name('laporan.export.arsip');
-
-    Route::get('jadwal-realtime', [LaporanController::class, 'realtime'])->name('laporan.realtime');
-
-
 });
 
 // ======================================================================
-// === 5. GRUP RUTE GURU PIKET ===
+// === GRUP RUTE HANYA UNTUK KEPALA SEKOLAH ===
 // ======================================================================
-// Semua rute di grup ini HANYA bisa diakses oleh 'piket'
-// URL-nya akan berawalan /piket/...
-Route::middleware(['auth', 'role:piket'])->prefix('piket')->name('piket.')->group(function () {
-    
-    // Tahap 5: Dasbor Piket (Halaman Utama)
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Tahap 5: Aksi Simpan Laporan Harian
-    Route::post('/laporan-harian', [LaporanHarianController::class, 'store'])->name('laporan-harian.store');
+Route::middleware(['auth', 'role:kepala_sekolah'])->prefix('kepala-sekolah')->name('kepala-sekolah.')->group(function () {
+    Route::get('/dashboard', [KepalaSekolahDashboardController::class, 'index'])->name('dashboard');
+});
 
-    // Fitur Tambahan: Ganti Password
+// ======================================================================
+// === GRUP RUTE HANYA UNTUK GURU PIKET ===
+// ======================================================================
+Route::middleware(['auth', 'role:piket'])->prefix('piket')->name('piket.')->group(function () {
+    Route::get('/dashboard', [PiketDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/laporan-harian', [LaporanHarianController::class, 'store'])->name('laporan-harian.store');
     Route::get('/ganti-password', [GantiPasswordController::class, 'edit'])->name('ganti-password.edit');
     Route::put('/ganti-password', [GantiPasswordController::class, 'update'])->name('ganti-password.update');
-
 });
-Route::get('/display/jadwal', [DisplayController::class, 'jadwalRealtime'])->name('display.jadwal');
 
 // ======================================================================
-// === 6. GRUP RUTE GURU (BARU) ===
+// === GRUP RUTE HANYA UNTUK GURU UMUM ===
 // ======================================================================
-// URL-nya akan berawalan /guru/...
 Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
-
-    // Dasbor utama guru
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
-
-    // Proses submit absensi
     Route::post('/absen', [AbsenController::class, 'store'])->name('absen.store');
-
-    // (Nanti kita tambahkan rute untuk riwayat absen pribadi)
 });
-// 6. Rute Autentikasi (Bawaan Breeze, HARUS di paling bawah)
+
+
+// Rute Autentikasi Bawaan Breeze
 require __DIR__.'/auth.php';

@@ -30,11 +30,13 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
                             Menampilkan Laporan: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
                         </h3>
-                        <a href="{{ route('admin.laporan.export.mingguan', ['tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-xs text-white uppercase font-semibold rounded-md hover:bg-green-700">
+                        <a href="{{ route('admin.laporan.export.mingguan', ['tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}"
+                           class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
                         </a>
                     </div>
@@ -44,47 +46,53 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Guru</th>
+                                    
                                     @foreach ($tanggalRange as $tanggal)
                                         <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
                                             {{ $tanggal->isoFormat('ddd, D') }}
                                         </th>
                                     @endforeach
+                                    
                                     <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Total Absen</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($semuaGuru as $guru)
                                     <tr>
-                                        <!-- REVISI: Panggil kolom 'name' -->
                                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $guru->name }}</td>
+
                                         @foreach ($tanggalRange as $tanggal)
                                             @php
                                                 $laporan = $guru->laporanHarian->firstWhere('tanggal', $tanggal->toDateString());
-                                                $status = $laporan ? $laporan->status : '';
-                                                $bgColor = 'bg-white';
-                                                if ($status == 'Hadir') $bgColor = 'bg-blue-100';
-                                                if ($status == 'Sakit') $bgColor = 'bg-green-100 text-green-800';
-                                                if ($status == 'Izin') $bgColor = 'bg-yellow-100 text-yellow-800';
-                                                if ($status == 'Alpa') $bgColor = 'bg-red-200 text-red-800 font-bold';
-                                                if ($status == 'DL') $bgColor = 'bg-gray-200';
+                                                $statusTampilan = '-';
+                                                if ($laporan) {
+                                                    $statusTampilan = ($laporan->status == 'DL') ? 'DL' : substr($laporan->status, 0, 1);
+                                                }
                                             @endphp
-                                            <td class="px-2 py-3 text-center text-xs font-medium border-r {{ $bgColor }}">
-                                                {{ $status ? substr($status, 0, 1) : '-' }}
+                                            <td class="px-2 py-3 text-center text-xs font-medium border-r">
+                                                {{ $statusTampilan }}
                                             </td>
                                         @endforeach
+                                        
                                         <td class="px-2 py-3 text-center text-sm font-medium bg-gray-50">
                                             H: <span class="font-bold text-blue-600">{{ $guru->laporanHarian->where('status', 'Hadir')->count() }}</span> | 
                                             S: <span class="font-bold text-green-600">{{ $guru->laporanHarian->where('status', 'Sakit')->count() }}</span> | 
                                             I: <span class="font-bold text-yellow-600">{{ $guru->laporanHarian->where('status', 'Izin')->count() }}</span> | 
-                                            A: <span class="font-bold text-red-600">{{ $guru->laporanHarian->where('status', 'Alpa')->count() }}</span>
+                                            A: <span class="font-bold text-red-600">{{ $guru->laporanHarian->where('status', 'Alpa')->count() }}</span> |
+                                            DL: <span class="font-bold text-purple-600">{{ $guru->laporanHarian->where('status', 'DL')->count() }}</span>
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="{{ $tanggalRange->count() + 2 }}" class="px-6 py-4 text-center text-gray-500">Belum ada data guru.</td></tr>
+                                    <tr>
+                                        <td colspan="{{ count($tanggalRange) + 2 }}" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            Belum ada data guru.
+                                        </td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>

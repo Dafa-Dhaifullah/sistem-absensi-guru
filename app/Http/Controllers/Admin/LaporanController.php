@@ -59,7 +59,8 @@ class LaporanController extends Controller
             }])
             ->orderBy('name', 'asc')->get();
 
-        $tanggalRange = Carbon::parse($tanggalMulai)->toPeriod(Carbon::parse($tanggalSelesai));
+        // Tambahkan ->locale('id_ID') untuk memastikan Carbon menggunakan Bahasa Indonesia
+$tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::parse($tanggalSelesai));
 
         return view('admin.laporan.mingguan', [
             'semuaGuru' => $semuaGuru,
@@ -154,11 +155,17 @@ class LaporanController extends Controller
                                 ->get();
         }
         
+        
+        $laporanHariIni = LaporanHarian::where('tanggal', $today->toDateString())
+                            ->get()
+                            ->keyBy('user_id');
+
         return view('admin.laporan.realtime', [
             'jadwalSekarang' => $jadwalSekarang,
             'hariIni' => $hariIni,
             'jamKeSekarang' => $jamKeSekarang,
             'tipeMinggu' => $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler',
+            'laporanHariIni' => $laporanHariIni // <-- KIRIM DATA BARU INI
         ]);
     }
 
