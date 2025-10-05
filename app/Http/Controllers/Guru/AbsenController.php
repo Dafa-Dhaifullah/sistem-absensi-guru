@@ -8,13 +8,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\LaporanHarian;
+use App\Models\JadwalPelajaran;
+use App\Models\QrCodeLog;
 use Carbon\Carbon;
 
 class AbsenController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validasi Input Dasar
         $request->validate([
             'qr_token' => 'required|string',
             'foto_selfie' => 'required|image|max:2048',
@@ -23,33 +24,32 @@ class AbsenController extends Controller
         $user = Auth::user();
         $today = now('Asia/Jakarta');
 
-        // 2. Validasi Token QR Code (Ini sudah benar)
+        // REVISI: Validasi Token QR Code
         try {
-            $decryptedToken = Crypt::decryptString($request->qr_token);
-            $tokenData = json_decode($decryptedToken, true);
-            if (time() > $tokenData['valid_until'] || $tokenData['secret'] !== config('app.key')) {
-                throw new \Exception('Token tidak valid atau kedaluwarsa.');
+            // Update status log menjadi 'Di-scan'
+            $qrLog = QrCodeLog::where('token', $request->qr_token)->firstOrFail();
+            
+            // Cek apakah token sudah pernah di-scan
+            if ($qrLog->status == 'Di-scan') {
+                throw new \Exception('QR Code ini sudah pernah digunakan.');
             }
-        } catch (DecryptException | \Exception $e) {
-            return redirect()->back()->withErrors(['foto_selfie' => 'Gagal memvalidasi QR Code. Silakan scan ulang.']);
+            
+            // REVISI: Waktu kedaluwarsa jadi 2 menit + toleransi 15 detik
+            $waktuKadaluarsaDenganToleransi = Carbon::parse($qrLog->waktu_kadaluarsa)->addSeconds(15);
+            if ($today->isAfter($waktuKadaluarsaDenganToleransi)) {
+                $qrLog->update(['status' => 'Kedaluwarsa']);
+                throw new \Exception('QR Code sudah kedaluwarsa.');
+            }
+            
+            // Jika berhasil, update status log
+            $qrLog->increment('jumlah_scan');
+            $qrLog->update(['status' => 'Di-scan']);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: ' . $e->getMessage()]);
         }
 
-        // ==========================================================
-        // ## TAMBAHAN: Validasi Foto (EXIF Data) ##
-        // ==========================================================
-        $imagePath = $request->file('foto_selfie')->getRealPath();
-        // Cek apakah fungsi exif_read_data ada di server Anda
-        if (function_exists('exif_read_data')) {
-            $exif = @exif_read_data($imagePath);
-            // Jika tidak ada data EXIF 'Make' (merek kamera) atau 'Model', tolak foto
-            if (empty($exif['Make']) && empty($exif['Model'])) {
-                 return redirect()->back()->withErrors(['foto_selfie' => 'Foto yang diunggah tidak valid. Harap gunakan foto langsung dari kamera.']);
-            }
-        }
-        // ==========================================================
-
-
-        // 3. Tentukan Status Keterlambatan (Ini sudah benar)
+        // REVISI: Patokan keterlambatan jadi 15 menit
         $jadwalPertama = $user->jadwalPelajaran()
             ->where('hari', ['Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'][$today->format('l')])
             ->orderBy('jam_ke', 'asc')
@@ -63,13 +63,12 @@ class AbsenController extends Controller
             ->where('jam_ke', $jadwalPertama->jam_ke)
             ->first();
         
+        // REVISI: Beri toleransi 15 menit dari jam mulai
         $batasWaktuMasuk = Carbon::parse($masterJamPertama->jam_mulai)->addMinutes(15);
         $statusKeterlambatan = ($today->isAfter($batasWaktuMasuk)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // 4. Simpan Foto Selfie (Ini sudah benar)
+        // ... (Sisa kode untuk Simpan Foto dan Simpan Laporan tidak berubah)
         $pathFoto = $request->file('foto_selfie')->store('public/selfies/' . $today->format('Y-m'));
-
-        // 5. Simpan Laporan ke Database (Ini sudah benar)
         LaporanHarian::create([
             'tanggal' => $today->toDateString(),
             'user_id' => $user->id,
@@ -83,4 +82,3 @@ class AbsenController extends Controller
         return redirect()->route('guru.dashboard')->with('success', 'Absensi berhasil! Status Anda: ' . $statusKeterlambatan);
     }
 }
-

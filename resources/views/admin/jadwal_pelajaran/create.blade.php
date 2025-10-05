@@ -10,6 +10,10 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
+                    <div class="mb-4 text-sm text-gray-600">
+                        Keterangan: <span class="text-red-500">*</span> Wajib diisi.
+                    </div>
+                    
                     @if ($errors->any())
                         <div class="mb-4 p-4 bg-red-100 text-red-700 rounded">
                             <ul class="list-disc list-inside">
@@ -25,22 +29,26 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             <div class="space-y-6">
-                               <div>
-    <x-input-label for="user_id" :value="__('Guru Pengajar')" />
-    <select id="user_id" name="user_id" class="block mt-1 w-full ..." required>
-        <option value="" disabled selected>-- Pilih Guru --</option>
-        @foreach ($daftarGuru as $guru)
-            <option value="{{ $guru->id }}" {{ old('user_id') == $guru->id ? 'selected' : '' }}>
-                {{ $guru->name }}
-            </option>
-        @endforeach
-    </select>
-    <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
-</div>
+                                <div>
+                                    <x-input-label for="user_id">
+                                        Guru Pengajar <span class="text-red-500">*</span>
+                                    </x-input-label>
+                                    <select id="user_id" name="user_id" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                                        <option value="" disabled selected>-- Pilih Guru --</option>
+                                        @foreach ($daftarGuru as $guru)
+                                            <option value="{{ $guru->id }}" {{ old('user_id') == $guru->id ? 'selected' : '' }}>
+                                                {{ $guru->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <x-input-error :messages="$errors->get('user_id')" class="mt-2" />
+                                </div>
 
                                 <div>
-                                    <x-input-label for="hari" :value="__('Hari')" />
-                                    <select id="hari" name="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                    <x-input-label for="hari">
+                                        Hari <span class="text-red-500">*</span>
+                                    </x-input-label>
+                                    <select id="hari" name="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
                                         <option value="" disabled selected>-- Pilih Hari --</option>
                                         <option value="Senin" {{ old('hari') == 'Senin' ? 'selected' : '' }}>Senin</option>
                                         <option value="Selasa" {{ old('hari') == 'Selasa' ? 'selected' : '' }}>Selasa</option>
@@ -51,12 +59,13 @@
                                     </select>
                                     <x-input-error :messages="$errors->get('hari')" class="mt-2" />
                                 </div>
-
                             </div>
                             
                             <div class="space-y-6">
                                 <div>
-                                    <x-input-label for="kelas" :value="__('Kelas')" />
+                                    <x-input-label for="kelas">
+                                        Kelas <span class="text-red-500">*</span>
+                                    </x-input-label>
                                     <x-text-input id="kelas" class="block mt-1 w-full" type="text" name="kelas" :value="old('kelas')" required placeholder="Contoh: X RPL 1" />
                                     <x-input-error :messages="$errors->get('kelas')" class="mt-2" />
                                 </div>
@@ -68,9 +77,11 @@
                                 </div>
 
                                 <div>
-                                    <x-input-label for="tipe_blok" :value="__('Tipe Blok')" />
-                                    <select id="tipe_blok" name="tipe_blok" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                        <option value="Setiap Minggu" {{ old('tipe_blok') == 'Setiap Minggu' ? 'selected' : '' }}>Setiap Minggu (Non-Blok)</option>
+                                    <x-input-label for="tipe_blok">
+                                        Tipe Blok <span class="text-red-500">*</span>
+                                    </x-input-label>
+                                    <select id="tipe_blok" name="tipe_blok" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                                        <option value="Setiap Minggu" {{ old('tipe_blok') == 'Setiap Minggu' ? 'selected' : '' }}>Setiap Minggu</option>
                                         <option value="Hanya Minggu 1" {{ old('tipe_blok') == 'Hanya Minggu 1' ? 'selected' : '' }}>Hanya Minggu 1</option>
                                         <option value="Hanya Minggu 2" {{ old('tipe_blok') == 'Hanya Minggu 2' ? 'selected' : '' }}>Hanya Minggu 2</option>
                                     </select>
@@ -79,29 +90,26 @@
                             </div>
                         </div>
 
-                        </select>
-<x-input-error :messages="$errors->get('tipe_blok')" class="mt-2" />
-</div>
+                        <div class="mt-6 border-t pt-6">
+                            <x-input-label>
+                                Pilih Jam Mengajar <span class="text-red-500">*</span>
+                            </x-input-label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2 border p-4 rounded-md">
+                                @for ($i = 1; $i <= 10; $i++)
+                                <label for="jam_{{ $i }}" class="flex items-center">
+                                    <input id="jam_{{ $i }}" type="checkbox" name="jam_ke[]" value="{{ $i }}" class="rounded border-gray-300 text-indigo-600 shadow-sm">
+                                    <span class="ms-2 text-sm text-gray-600">{{ __('Jam ke-') }}{{ $i }}</span>
+                                </label>
+                                @endfor
+                            </div>
+                            <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
+                        </div>
 
-</div> </div> <div class="mt-6 border-t pt-6">
-    <x-input-label for="jam_ke" :value="__('Pilih Jam Mengajar (Centang yang sesuai)')" />
-
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2 border p-4 rounded-md">
-
-        @for ($i = 1; $i <= 10; $i++)
-        <label for="jam_{{ $i }}" class="flex items-center">
-            <input id="jam_{{ $i }}" type="checkbox" name="jam_ke[]" value="{{ $i }}"
-                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="ms-2 text-sm text-gray-600">{{ __('Jam ke-') }}{{ $i }}</span>
-        </label>
-        @endfor
-
-    </div>
-    <x-input-error :messages="$errors->get('jam_ke')" class="mt-2" />
-</div>
-<div class="flex items-center gap-4 mt-8 pt-6 border-t">
-    <x-primary-button>{{ __('Simpan Jadwal') }}</x-primary-button>
-    </form>
+                        <div class="flex items-center gap-4 mt-8 pt-6 border-t">
+                            <x-primary-button>{{ __('Simpan Jadwal') }}</x-primary-button>
+                            <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="text-gray-600 hover:text-gray-900">{{ __('Batal') }}</a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

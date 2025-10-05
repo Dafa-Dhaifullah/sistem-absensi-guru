@@ -15,25 +15,29 @@ class QrCodeController extends Controller
         // Kita akan buat view ini di langkah berikutnya
         return view('display.qr_kios');
     }
-
+   
     /**
      * Menghasilkan token terenkripsi yang unik dan memiliki masa kedaluwarsa.
      */
     public function generateToken()
     {
-        // Data yang akan kita sembunyikan di dalam QR code
-        $data = [
-            'timestamp' => now()->timestamp, // Waktu saat token dibuat
-            'valid_until' => now()->addMinutes(1)->timestamp, // Token valid 1 menit
-            'secret' => config('app.key'), // Kunci rahasia aplikasi
-        ];
+        $waktuDibuat = now();
+        $waktuKadaluarsa = $waktuDibuat->copy()->addMinutes(2); // REVISI: Jadi 2 menit
 
-        // Enkripsi data menjadi string panjang
+        $data = [
+            'timestamp' => $waktuDibuat->timestamp,
+            'valid_until' => $waktuKadaluarsa->timestamp,
+            'secret' => config('app.key'),
+        ];
         $encryptedToken = Crypt::encryptString(json_encode($data));
 
-        // Kirim token sebagai respons JSON
-        return response()->json([
+        // Simpan log ke database
+        \App\Models\QrCodeLog::create([
             'token' => $encryptedToken,
+            'dibuat_oleh' => auth()->check() ? auth()->id() : null, // Catat siapa yg generate (jika login)
+            'waktu_kadaluarsa' => $waktuKadaluarsa,
         ]);
+
+        return response()->json(['token' => $encryptedToken]);
     }
 }

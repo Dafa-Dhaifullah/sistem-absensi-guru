@@ -33,7 +33,7 @@
                     
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
-                            Menampilkan Laporan: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
+                            Menampilkan Laporan: {{ \Carbon\Carbon::parse($tanggalMulai)->locale('id_ID')->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->locale('id_ID')->isoFormat('D MMM Y') }}
                         </h3>
                         <a href="{{ route('admin.laporan.export.mingguan', ['tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}"
                            class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">

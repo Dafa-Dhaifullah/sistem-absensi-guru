@@ -25,6 +25,8 @@ use App\Http\Controllers\Guru\AbsenController;
 use App\Http\Controllers\Piket\DashboardController as PiketDashboardController;
 use App\Http\Controllers\Piket\LaporanHarianController;
 use App\Http\Controllers\Piket\GantiPasswordController;
+use App\Http\Controllers\Guru\RiwayatController;
+use App\Http\controller\Admin\QrLogController;
 
 
 /*
@@ -100,6 +102,8 @@ Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name(
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
     Route::get('laporan/export/arsip', [LaporanController::class, 'exportArsip'])->name('laporan.export.arsip');
+
+    Route::get('log-qrcode', [\App\Http\Controllers\Admin\QrLogController::class, 'index'])->name('qr-log.index');
 });
 
 // ======================================================================
@@ -125,6 +129,8 @@ Route::middleware(['auth', 'role:piket'])->prefix('piket')->name('piket.')->grou
 Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
     Route::post('/absen', [AbsenController::class, 'store'])->name('absen.store');
+
+    Route::get('/riwayat-absensi', [RiwayatController::class, 'index'])->name('riwayat.index');
 });
 
 

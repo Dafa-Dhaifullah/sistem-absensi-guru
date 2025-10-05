@@ -14,8 +14,9 @@
                         <a href="{{ route('admin.jadwal-pelajaran.create') }}">
                             <x-primary-button>{{ __('Tambah Jadwal Baru') }}</x-primary-button>
                         </a>
-                         <a href="{{ route('admin.jadwal-pelajaran.import.form') }}">
-        <x-secondary-button>{{ __('Import dari Excel') }}</x-secondary-button>
+                         <a href="{{ route('admin.jadwal-pelajaran.import.form') }} " class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                            
+       Import dari Excel
     </a>
                         </div>
 

@@ -18,8 +18,8 @@
     <a href="{{ route('admin.pengguna.create', ['role' => $role]) }}">
         <x-primary-button>{{ $label }}</x-primary-button>
     </a>
-    <a href="{{ route('admin.pengguna.import.form') }}">
-        <x-secondary-button>{{ __('Import Pengguna') }}</x-secondary-button>
+    <a href="{{ route('admin.pengguna.import.form') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+        Import Pengguna
     </a>
     </div>
 

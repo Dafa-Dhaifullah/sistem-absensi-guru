@@ -47,7 +47,7 @@ class LaporanIndividuExport implements FromQuery, WithHeadings, WithMapping, Sho
     {
         // REVISI: Tambahkan locale('id_ID') untuk format hari
         return [
-            \Carbon\Carbon::parse($laporan->tanggal)->isoFormat('D MMMM YYYY'),
+            \Carbon\Carbon::parse($laporan->tanggal)->locale('id_ID')->isoFormat('D MMMM YYYY'),
             \Carbon\Carbon::parse($laporan->tanggal)->locale('id_ID')->isoFormat('dddd'),
             $laporan->status,
         ];

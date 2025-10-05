@@ -12,10 +12,10 @@
                     
                     <p class="mb-4 text-gray-600">
                         Daftar catatan harian (logbook) yang diisi oleh Guru Piket.
-                         <a href="{{ route('admin.laporan.export.arsip') }}">
-            <x-secondary-button>
-                {{ __('Export ke Excel') }}
-            </x-secondary-button>
+                         <a href="{{ route('admin.laporan.export.arsip') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+           
+                Export ke Excel
+            
         </a>
                     </p>
                    

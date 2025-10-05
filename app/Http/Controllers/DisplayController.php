@@ -25,8 +25,8 @@ class DisplayController extends Controller
         $hariIni = $hariMap[$today->format('l')]; 
         $jamSekarang = $today->toTimeString();
 
-        $tipeMinggu = KalenderBlok::where('tanggal_mulai', '<=', $today)
-                                  ->where('tanggal_selesai', '>=', $today)
+        $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $today)
+                                  ->whereDate('tanggal_selesai', '>=', $today)
                                   ->first();
 
         $jamKeSekarang = MasterJamPelajaran::where('hari', $hariIni)

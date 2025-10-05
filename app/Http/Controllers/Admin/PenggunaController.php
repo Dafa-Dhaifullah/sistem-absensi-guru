@@ -25,42 +25,48 @@ class PenggunaController extends Controller
         return view('admin.pengguna.index', compact('semuaPengguna'));
     }
 
-    // Menampilkan form tambah pengguna
+   /**
+     * Menampilkan form tambah pengguna
+     */
     public function create(Request $request)
-{
-    // Ambil role dari URL dan kirim ke view
-    $role = $request->query('role', 'guru'); // Default ke 'guru' jika tidak ada
-    return view('admin.pengguna.create', compact('role'));
-}
+    {
+        // Ambil 'role' dari parameter URL, default ke 'guru' jika tidak ada
+        $role = $request->query('role', 'guru'); 
+        
+        // Kirim variabel $role ke view
+        return view('admin.pengguna.create', compact('role'));
+    }
 
-    // Menyimpan pengguna baru
+    /**
+     * Menyimpan pengguna baru
+     */
     public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'username' => 'required|string|max:255|unique:users',
-        'email' => 'nullable|string|email|max:255|unique:users,email',
-        'nip' => 'nullable|string|max:50|unique:users,nip',
-        'no_wa' => 'nullable|string|max:20',
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        // Validasi role yang dikirim dari input hidden
-        'role' => 'required|in:admin,kepala_sekolah,piket,guru',
-    ]);
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|string|email|max:255|unique:users,email',
+            'nip' => 'nullable|string|max:50|unique:users,nip',
+            'no_wa' => 'nullable|string|max:20',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => 'required|in:admin,kepala_sekolah,piket,guru', // Validasi role dari input hidden
+        ]);
 
-    User::create([
-        'name' => $request->name,
-        'username' => $request->username,
-        'email' => $request->email,
-        'nip' => $request->nip,
-        'no_wa' => $request->no_wa,
-        'password' => Hash::make($request->password),
-        'role' => $request->role, // Ambil role dari input hidden
-    ]);
+        User::create([
+            'name' => $request->name,
+            'username' => $request->username,
+            'email' => $request->email,
+            'nip' => $request->nip,
+            'no_wa' => $request->no_wa,
+            'password' => Hash::make($request->password),
+            'role' => $request->role, // Ambil role dari input hidden
+        ]);
 
-    // Redirect kembali ke halaman index DENGAN FILTER ROLE YANG SAMA
-    return redirect()->route('admin.pengguna.index', ['role' => $request->role])
-                     ->with('success', 'Pengguna baru berhasil ditambahkan.');
-}
+        // Redirect kembali ke halaman index DENGAN FILTER ROLE YANG SAMA
+        return redirect()->route('admin.pengguna.index', ['role' => $request->role])
+                         ->with('success', 'Pengguna baru berhasil ditambahkan.');
+    }
+
 
     // Menampilkan form edit pengguna
     public function edit(User $pengguna) // Menggunakan Route Model Binding
@@ -129,7 +135,7 @@ public function importExcel(Request $request)
     // Mereset password
     public function resetPassword(User $user)
     {
-        $defaultPassword = 'password123'; // Tentukan password default
+        $defaultPassword = 'smkn6garut'; // Tentukan password default
         $user->password = Hash::make($defaultPassword);
         $user->save();
         return redirect()->back()->with('success', 'Password untuk ' . $user->name . ' berhasil di-reset.');

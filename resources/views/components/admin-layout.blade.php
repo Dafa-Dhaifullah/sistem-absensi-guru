@@ -11,6 +11,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
 </head>
 <body class="font-sans antialiased bg-gray-100">
 
@@ -69,7 +70,7 @@
                             </button>
                         </x-slot>
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">{{ __('Profile') }}</x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')">{{ __('Profil') }}</x-dropdown-link>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
@@ -95,7 +96,7 @@
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="{{ asset('images/logo-sekolah.png') }}" alt="Logo Sekolah" class="h-9 w-9 rounded-md object-contain"/>
                     <div class="truncate" x-show="!sidebarMini" x-transition>
-                        <div class="text-lg font-semibold leading-tight">SAGU</div>
+                        <div class="text-lg font-semibold leading-tight">SAG</div>
                         <div class="text-xs text-gray-300 leading-tight">Sistem Absensi Guru</div>
                     </div>
                 </div>
@@ -207,6 +208,18 @@
                         <hr class="border-gray-700 my-2" x-show="!sidebarMini" x-transition>
                         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
 
+<li>
+    <a href="{{ route('admin.qr-log.index') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700">
+        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 21 21">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 7.418V4.582A2.582 2.582 0 0 0 4.836 2H2.254A2.254 2.254 0 0 0 0 4.254v2.582A2.254 2.254 0 0 0 2.254 9h2.582A2.582 2.582 0 0 0 7.418 6.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 4.582v2.582h2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 14.582V11.5a2.582 2.582 0 0 0-2.582-2.582H2.254A2.254 2.254 0 0 0 0 11.17v2.582A2.254 2.254 0 0 0 2.254 16h2.582A2.582 2.582 0 0 0 7.418 13.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 11.17v2.582h2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.582 7.418V4.582A2.582 2.582 0 0 0 12 2h-2.582A2.254 2.254 0 0 0 7.164 4.254v2.582A2.254 2.254 0 0 0 9.418 9H12a2.582 2.582 0 0 0 2.582-2.582Zm0 0a2.582 2.582 0 0 0-2.582-2.582H9.418"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.418 4.582v2.582H12M12.918 12h-1.5v1.5h1.5V12Zm3 3h-1.5v1.5h1.5V15Zm-3-1.5h-1.5v1.5h1.5v-1.5Zm-3 0h1.5v1.5H9.918v-1.5Zm-3-1.5h1.5v1.5H6.918V12Zm-3 1.5h1.5v1.5H3.918V13.5Zm12-1.5h1.5v1.5h-1.5V12Zm1.5 1.5h1.5v1.5h-1.5v-1.5Zm-3-1.5h1.5v1.5h-1.5v-1.5Z"/>
+        </svg> <span x-show="!sidebarMini" x-transition>Log QR Code</span>
+    </a>
+</li>
                         <li>
                             <a href="{{ route('admin.laporan.realtime') }}"
                                class="group flex items-center gap-3 rounded-lg px-3 py-2 bg-blue-500 hover:bg-blue-600">
@@ -274,7 +287,7 @@
                 <div class="flex items-center gap-3">
                     <img src="{{ asset('images/logo-sekolah.png') }}" class="h-9 w-9 rounded-md object-contain" alt="Logo"/>
                     <div>
-                        <div class="text-lg font-semibold leading-tight">SAGU</div>
+                        <div class="text-lg font-semibold leading-tight">SAG</div>
                         <div class="text-xs text-gray-300 leading-tight">Sistem Absensi Guru</div>
                     </div>
                 </div>
@@ -379,7 +392,18 @@
                     @if(in_array(Auth::user()->role, ['admin', 'kepala_sekolah']))
                         <hr class="border-gray-700 my-2" x-show="!sidebarMini" x-transition>
                         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
-
+<li>
+    <a href="{{ route('admin.qr-log.index') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700">
+        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 21 21">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 7.418V4.582A2.582 2.582 0 0 0 4.836 2H2.254A2.254 2.254 0 0 0 0 4.254v2.582A2.254 2.254 0 0 0 2.254 9h2.582A2.582 2.582 0 0 0 7.418 6.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 4.582v2.582h2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 14.582V11.5a2.582 2.582 0 0 0-2.582-2.582H2.254A2.254 2.254 0 0 0 0 11.17v2.582A2.254 2.254 0 0 0 2.254 16h2.582A2.582 2.582 0 0 0 7.418 13.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 11.17v2.582h2.582"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.582 7.418V4.582A2.582 2.582 0 0 0 12 2h-2.582A2.254 2.254 0 0 0 7.164 4.254v2.582A2.254 2.254 0 0 0 9.418 9H12a2.582 2.582 0 0 0 2.582-2.582Zm0 0a2.582 2.582 0 0 0-2.582-2.582H9.418"/>
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.418 4.582v2.582H12M12.918 12h-1.5v1.5h1.5V12Zm3 3h-1.5v1.5h1.5V15Zm-3-1.5h-1.5v1.5h1.5v-1.5Zm-3 0h1.5v1.5H9.918v-1.5Zm-3-1.5h1.5v1.5H6.918V12Zm-3 1.5h1.5v1.5H3.918V13.5Zm12-1.5h1.5v1.5h-1.5V12Zm1.5 1.5h1.5v1.5h-1.5v-1.5Zm-3-1.5h1.5v1.5h-1.5v-1.5Z"/>
+        </svg> <span x-show="!sidebarMini" x-transition>Log QR Code</span>
+    </a>
+</li>
                         <li>
                             <a href="{{ route('admin.laporan.realtime') }}"
                                class="group flex items-center gap-3 rounded-lg px-3 py-2 bg-blue-500 hover:bg-blue-600">
@@ -417,6 +441,35 @@
                         </li>
                     @endif
                 </ul>
+            </div>
+            <!-- PROFIL PENGGUNA (MOBILE) -->
+            <div class="border-t border-gray-700 px-4 py-3">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <img class="h-8 w-8 rounded-full object-cover"
+                             src="{{ Auth::user()->profile_photo_url ?? asset('images/default-avatar.png') }}"
+                             alt="{{ Auth::user()->name }}">
+                    </div>
+                    <div class="ml-3">
+                        <div class="text-sm font-medium text-white">{{ Auth::user()->name }}</div>
+                        <div class="text-xs text-gray-400">{{ Auth::user()->email }}</div>
+                    </div>
+                </div>
+
+                <div class="mt-3 space-y-1">
+                    <a href="{{ route('profile.edit') }}"
+                       class="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                        Profil Saya
+                    </a>
+
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                                class="w-full text-left px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                            Keluar
+                        </button>
+                    </form>
+                </div>
             </div>
         </aside>
     </div>

@@ -17,7 +17,7 @@
                                 <select name="bulan" id="bulan" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     @for ($m = 1; $m <= 12; $m++)
                                         <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::create()->month($m)->isoFormat('MMMM') }}
+                                            {{ \Carbon\Carbon::create()->month($m)->locale('id_ID')->isoFormat('MMMM') }}
                                         </option>
                                     @endfor
                                 </select>
@@ -27,7 +27,9 @@
                                 <x-text-input id="tahun" class="block mt-1 w-full" type="number" name="tahun" :value="$tahun" required />
                             </div>
                             <div class="flex items-end">
-                                <x-primary-button type="submit">{{ __('Tampilkan') }}</x-primary-button>
+                                <x-primary-button type="submit">
+                                    {{ __('Tampilkan') }}
+                                </x-primary-button>
                             </div>
                         </div>
                     </form>
@@ -36,9 +38,10 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
-                            Menampilkan Laporan: {{ \Carbon\Carbon::create()->month($bulan)->isoFormat('MMMM') }} {{ $tahun }}
+                            Menampilkan Laporan: {{ \Carbon\Carbon::create()->month($bulan)->locale('id_ID')->isoFormat('MMMM') }} {{ $tahun }}
                         </h3>
                         <a href="{{ route('admin.laporan.export.bulanan', ['bulan' => $bulan, 'tahun' => $tahun]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
@@ -63,19 +66,17 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($semuaGuru as $guru)
                                     <tr>
-                                        <!-- REVISI: Panggil kolom 'name' dari model User -->
                                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $guru->name }}</td>
                                         @for ($i = 1; $i <= $daysInMonth; $i++)
                                             @php
                                                 $tanggalCek = sprintf('%s-%s-%s', $tahun, str_pad($bulan, 2, '0', STR_PAD_LEFT), str_pad($i, 2, '0', STR_PAD_LEFT));
                                                 $laporan = $guru->laporanHarian->firstWhere('tanggal', $tanggalCek);
                                                 $status = $laporan ? $laporan->status : '';
-                                                
                                                 $bgColor = 'bg-white';
                                                 if ($status == 'Hadir') $bgColor = 'bg-blue-100';
-                                                if ($status == 'Sakit') $bgColor = 'bg-green-100 text-green-800';
-                                                if ($status == 'Izin') $bgColor = 'bg-yellow-100 text-yellow-800';
-                                                if ($status == 'Alpa') $bgColor = 'bg-red-200 text-red-800 font-bold';
+                                                if ($status == 'Sakit') $bgColor = 'bg-green-100';
+                                                if ($status == 'Izin') $bgColor = 'bg-yellow-100';
+                                                if ($status == 'Alpa') $bgColor = 'bg-red-200 font-bold';
                                                 if ($status == 'DL') $bgColor = 'bg-gray-200';
                                             @endphp
                                             <td class="px-2 py-3 text-center text-xs font-medium border-r {{ $bgColor }}">

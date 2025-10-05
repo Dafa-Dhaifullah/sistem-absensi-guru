@@ -1,9 +1,15 @@
-<x-app-layout>
+<x-teacher-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dasbor Pemantauan Piket') }}
         </h2>
     </x-slot>
+    <div class="p-6 text-gray-900">
+     <a href="{{ route('display.qr-kios') }}" target="_blank" 
+                           class="block w-full p-6 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-800 transition duration-150">
+                            <h3 class="text-2xl font-bold">Tampilkan QR Code Absensi</h3>
+                            <p class="text-gray-300">Buka halaman ini di monitor/tablet untuk absensi.</p>
+                        </a>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -47,6 +53,7 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status Saat Ini</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi Override</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Kontak</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Bukti Foto</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -100,10 +107,20 @@
                                                 <span class="text-xs text-gray-400">N/A</span>
                                             @endif
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+            @if ($laporan && $laporan->foto_selfie_path)
+                <a href="{{ Storage::url($laporan->foto_selfie_path) }}" target="_blank"
+                   class="text-blue-600 hover:underline">
+                    Lihat
+                </a>
+            @else
+                -
+            @endif
+        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada guru yang terjadwal hari ini.</td>
+                                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Tidak ada guru yang terjadwal hari ini.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -137,5 +154,5 @@
             </form>
         </div>
     </div>
-</x-app-layout>
+</x-teacher-layout>
 

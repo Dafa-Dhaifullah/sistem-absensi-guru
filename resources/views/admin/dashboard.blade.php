@@ -6,19 +6,43 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-medium">Selamat Datang, {{ Auth::user()->name }}!</h3>
-                    <p class="mt-1 text-sm text-gray-600">
-                        Ini adalah panel kontrol Anda. Silakan kelola sistem melalui menu di bawah.
-                    </p>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-                    @if(isset($guruWarning) && !$guruWarning->isEmpty())
-                    <div class="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-800 rounded-r-lg shadow-md" role="alert">
-                        <h4 class="font-bold">Peringatan Ketidakhadiran (Bulan Ini)</h4>
-                        <p class="text-sm">Guru berikut telah mencapai atau melebihi batas maksimal ketidakhadiran gabungan (Sakit + Izin + Alpa >= 4 kali):</p>
-                        <ul class="mt-2 list-disc list-inside text-sm">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-bold text-gray-800">Selamat Datang Kembali, {{ Auth::user()->name }}! 👋</h3>
+                    <p class="mt-2 text-gray-600">
+                        Ini adalah pusat kontrol Anda. Kelola pengguna, jadwal, dan lihat laporan dari sini.
+                    </p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-sm flex justify-around items-center">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-indigo-600">{{ $jumlahGuru ?? 0 }}</div>
+                        <div class="text-sm font-medium text-gray-500 uppercase tracking-wider">Guru</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-indigo-600">{{ $jumlahAkunPiket ?? 0 }}</div>
+                        <div class="text-sm font-medium text-gray-500 uppercase tracking-wider">Guru Piket</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-indigo-600">{{ $jumlahJadwal ?? 0 }}</div>
+                        <div class="text-sm font-medium text-gray-500 uppercase tracking-wider">Jadwal</div>
+                    </div>
+                </div>
+            </div>
+
+            @if(isset($guruWarning) && !$guruWarning->isEmpty())
+            <div class="p-5 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg shadow-sm" role="alert">
+                <div class="flex">
+                    <div class="py-1">
+                        <svg class="h-6 w-6 text-yellow-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-yellow-800">Peringatan Ketidakhadiran (Bulan Ini)</h4>
+                        <p class="text-sm text-yellow-700">Beberapa guru telah melebihi batas maksimal ketidakhadiran:</p>
+                        <ul class="mt-2 list-disc list-inside text-sm text-yellow-700">
                             @foreach($guruWarning as $guru)
                                 <li>
                                     <strong>{{ $guru->name }}</strong> 
@@ -27,94 +51,63 @@
                             @endforeach
                         </ul>
                     </div>
-                    @endif
+                </div>
+            </div>
+            @endif
 
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a href="{{ route('display.jadwal') }}" target="_blank" 
-                           class="block w-full p-6 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-150">
-                            <h3 class="text-2xl font-bold">Luncurkan Monitor Real-time</h3>
-                            <p class="text-indigo-100">Menampilkan status kehadiran guru saat ini.</p>
-                        </a>
-                        
-                        <a href="{{ route('display.qr-kios') }}" target="_blank" 
-                           class="block w-full p-6 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-800 transition duration-150">
-                            <h3 class="text-2xl font-bold">Tampilkan QR Code Absensi</h3>
-                            <p class="text-gray-300">Buka halaman ini di monitor/tablet untuk absensi.</p>
-                        </a>
+            <div>
+                <a href="{{ route('display.jadwal') }}" target="_blank" 
+                   class="group flex items-center p-6 bg-white rounded-xl shadow-sm hover:bg-indigo-50 transition-all duration-200">
+                    <div class="mr-6 bg-indigo-100 p-3 rounded-lg">
+                         <svg class="h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-.871A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h9.75a2.25 2.25 0 012.25 2.25z" />
+                        </svg>
                     </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-indigo-600">Luncurkan Monitor Real-time</h3>
+                        <p class="text-gray-600">Tampilkan status kehadiran guru saat ini.</p>
+                    </div>
+                </a>
+            </div>
 
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="p-4 bg-gray-50 rounded-lg shadow border-l-4 border-gray-300">
-                            <div class="text-sm font-medium text-gray-500 uppercase">Total Guru</div>
-                            <div class="text-3xl font-bold text-gray-900">{{ $jumlahGuru ?? 0 }}</div>
-                        </div>
-                        <div class="p-4 bg-gray-50 rounded-lg shadow border-l-4 border-gray-300">
-                            <div class="text-sm font-medium text-gray-500 uppercase">Akun Piket</div>
-                            <div class="text-3xl font-bold text-gray-900">{{ $jumlahAkunPiket ?? 0 }}</div>
-                        </div>
-                        <div class="p-4 bg-gray-50 rounded-lg shadow border-l-4 border-gray-300">
-                            <div class="text-sm font-medium text-gray-500 uppercase">Total Jadwal</div>
-                            <div class="text-3xl font-bold text-gray-900">{{ $jumlahJadwal ?? 0 }}</div>
-                        </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h3 class="text-xl font-bold text-gray-800 mb-6">Pintasan Cepat</h3>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Manajemen Pengguna</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'admin']) }}" class="shortcut-card bg-red-50 hover:bg-red-100 text-red-800">Data Admin</a>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}" class="shortcut-card bg-purple-50 hover:bg-purple-100 text-purple-800">Data Kepala Sekolah</a>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'piket']) }}" class="shortcut-card bg-yellow-50 hover:bg-yellow-100 text-yellow-800">Data Guru Piket</a>
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'guru']) }}" class="shortcut-card bg-blue-50 hover:bg-blue-100 text-blue-800">Data Guru Umum</a>
+                    </div>
+                </div>
+
+                <hr class="my-8">
+
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Manajemen Jadwal</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Jadwal Pelajaran (Inti)</a>
+                        <a href="{{ route('admin.jadwal-piket.index') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Jadwal Piket</a>
+                        <a href="{{ route('admin.kalender-blok.index') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Kalender Blok</a>
+                        <a href="{{ route('admin.hari-libur.index') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Hari Libur</a>
+                    </div>
+                </div>
+
+                <hr class="my-8">
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Laporan & Arsip</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <a href="{{ route('admin.laporan.bulanan') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Rekap Bulanan</a>
+                        <a href="{{ route('admin.laporan.mingguan') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Rekap Mingguan</a>
+                        <a href="{{ route('admin.laporan.individu') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Laporan Individu</a>
+                        <a href="{{ route('admin.laporan.arsip') }}" class="shortcut-card bg-slate-50 hover:bg-slate-100 text-slate-800">Arsip Logbook</a>
                     </div>
                 </div>
             </div>
-
-            <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900">Pintasan Manajemen Data Pengguna</h3>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <a href="{{ route('admin.pengguna.index', ['role' => 'admin']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-red-400 hover:border-red-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Data Admin</div>
-                        </a>
-                        <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-purple-400 hover:border-purple-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Data Kepala Sekolah</div>
-                        </a>
-                        <a href="{{ route('admin.pengguna.index', ['role' => 'piket']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-yellow-400 hover:border-yellow-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Data Guru Piket</div>
-                        </a>
-                        <a href="{{ route('admin.pengguna.index', ['role' => 'guru']) }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-blue-400 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Data Guru Umum</div>
-                        </a>
-                    </div>
-                    
-                    <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Manajemen Jadwal (Otak Sistem)</h3>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="block p-6 bg-gray-50 hover:bg-gray-100 rounded-lg border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Jadwal Pelajaran (Inti)</div>
-                        </a>
-                        <a href="{{ route('admin.jadwal-piket.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Jadwal Piket</div>
-                        </a>
-                        <a href="{{ route('admin.kalender-blok.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Kalender Blok</div>
-                        </a>
-                        <!-- ============================================== -->
-                        <!-- == TAMBAHKAN PINTASAN HARI LIBUR DI SINI == -->
-                        <!-- ============================================== -->
-                        <a href="{{ route('admin.hari-libur.index') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Manajemen Hari Libur</div>
-                        </a>
-                        <!-- ============================================== -->
-                    </div>
-
-                    <h3 class="text-lg font-medium text-gray-900 mt-8">Pintasan Laporan</h3>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <a href="{{ route('admin.laporan.bulanan') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Laporan Rekap Bulanan</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.mingguan') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Laporan Rekap Mingguan</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.individu') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Laporan Individu Guru</div>
-                        </a>
-                        <a href="{{ route('admin.laporan.arsip') }}" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm border-l-4 border-gray-300 hover:border-blue-500 transition-colors">
-                            <div class="font-semibold text-gray-800">Arsip Logbook Piket</div>
-                        </a>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     </div>
 </x-admin-layout>

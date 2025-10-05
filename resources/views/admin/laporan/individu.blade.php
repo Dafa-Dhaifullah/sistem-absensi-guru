@@ -56,7 +56,7 @@
                             <div>
                                 <h3 class="text-lg font-medium">Hasil Laporan untuk: <span class="text-blue-600">{{ $guruTerpilih->name }}</span></h3>
                                 <p class="text-sm text-gray-600">
-                                    Periode: {{ \Carbon\Carbon::parse(request('tanggal_mulai'))->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse(request('tanggal_selesai'))->isoFormat('D MMM Y') }}
+                                    Periode: {{ \Carbon\Carbon::parse(request('tanggal_mulai'))->locale('id_ID')->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse(request('tanggal_selesai'))->locale('id_ID')->isoFormat('D MMM Y') }}
                                 </p>
                             </div>
                             <a href="{{ route('admin.laporan.export.individu', request()->all()) }}"
@@ -99,13 +99,14 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hari</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Kehadiran</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bukti foto</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @forelse ($laporan as $log)
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {{ \Carbon\Carbon::parse($log->tanggal)->isoFormat('D MMMM YYYY') }}
+                                                {{ \Carbon\Carbon::parse($log->tanggal)->locale('id_ID')->isoFormat('D MMMM YYYY') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {{ \Carbon\Carbon::parse($log->tanggal)->locale('id_ID')->isoFormat('dddd') }}
@@ -123,10 +124,20 @@
                                                     {{ $log->status }}
                                                 </span>
                                             </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+            @if ($log->foto_selfie_path)
+                <a href="{{ Storage::url($log->foto_selfie_path) }}" target="_blank"
+                   class="text-blue-600 hover:underline">
+                    Lihat Foto
+                </a>
+            @else
+                -
+            @endif
+        </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                 Tidak ada data laporan pada rentang tanggal ini.
                                             </td>
                                         </tr>

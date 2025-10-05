@@ -50,8 +50,8 @@ class DashboardController extends Controller
             return redirect('/login')->withErrors(['username' => 'Akses ditolak. Anda tidak terjadwal piket untuk hari/sesi ini.']);
         }
 
-        $tipeMinggu = KalenderBlok::where('tanggal_mulai', '<=', $today)
-                                  ->where('tanggal_selesai', '>=', $today)
+        $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $today)
+                                  ->whereDate('tanggal_selesai', '>=', $today)
                                   ->first();
         
         $blokValid = ['Setiap Minggu'];

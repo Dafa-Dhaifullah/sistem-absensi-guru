@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .shortcut-card {
+    @apply block p-4 rounded-lg font-semibold text-center transition-all duration-200;
+  }
+}
+
+@layer utilities {
+    .sidebar-mini .main-content {
+        @apply sm:ml-16;
+    }
+}
