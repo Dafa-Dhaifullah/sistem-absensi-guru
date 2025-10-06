@@ -43,7 +43,7 @@
                     });
 
                     // Mulai hitung mundur 60 detik
-                    startCountdown(60);
+                    startCountdown(120);
                 })
                 .catch(error => {
                     console.error('Gagal mengambil token QR:', error);
@@ -73,7 +73,7 @@
         generateQRCode();
 
         // Atur agar fungsi dipanggil setiap 60 detik (60000 milidetik)
-        setInterval(generateQRCode, 60000);
+        setInterval(generateQRCode, 120000);
     </script>
 </body>
 </html>

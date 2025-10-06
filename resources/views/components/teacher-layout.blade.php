@@ -28,7 +28,7 @@
                             <!-- Logo -->
                             <div class="shrink-0 flex items-center">
                                 <a href="{{ route('dashboard') }}">
-                                   
+                                    {{-- <x-application-logo class="block h-9 w-auto fill-current text-gray-800" /> --}}
                                 </a>
                             </div>
 
@@ -37,9 +37,17 @@
                                 <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('guru.dashboard') || request()->routeIs('piket.dashboard')">
                                     {{ __('Dashboard') }}
                                 </x-nav-link>
+
+                                {{-- ========================================================== --}}
+                                {{-- == HANYA TAMPIL JIKA ROLE ADALAH 'GURU' == --}}
+                                {{-- ========================================================== --}}
+                                @if(Auth::user()->role == 'guru')
                                 <x-nav-link :href="route('guru.riwayat.index')" :active="request()->routeIs('guru.riwayat.index')">
-    {{ __('Riwayat Absensi Saya') }}
-</x-nav-link>
+                                    {{ __('Riwayat Absensi Saya') }}
+                                </x-nav-link>
+                                @endif
+                                {{-- ========================================================== --}}
+
                             </div>
                         </div>
 
@@ -87,10 +95,19 @@
                         <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('Dashboard') }}
                         </x-responsive-nav-link>
-                        <x-nav-link :href="route('guru.riwayat.index')" :active="request()->routeIs('guru.riwayat.index')">
-    {{ __('Riwayat Absensi Saya') }}
-</x-nav-link>
+                        
+                        {{-- ========================================================== --}}
+                        {{-- == HANYA TAMPIL JIKA ROLE ADALAH 'GURU' (VERSI MOBILE) == --}}
+                        {{-- ========================================================== --}}
+                        @if(Auth::user()->role == 'guru')
+                        <x-responsive-nav-link :href="route('guru.riwayat.index')" :active="request()->routeIs('guru.riwayat.index')">
+                            {{ __('Riwayat Absensi Saya') }}
+                        </x-responsive-nav-link>
+                        @endif
+                        {{-- ========================================================== --}}
+                        
                     </div>
+                    
                     <div class="pt-4 pb-1 border-t border-gray-200">
                         <div class="px-4">
                             <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>

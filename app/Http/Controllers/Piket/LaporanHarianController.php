@@ -17,35 +17,42 @@ class LaporanHarianController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi
         $request->validate([
             'status_guru' => 'nullable|array', 
-            // REVISI: 'Hadir' DIHAPUS dari daftar status yang valid untuk override.
             'status_guru.*' => 'nullable|in:Sakit,Izin,DL,Alpa',
-            'kejadian_penting' => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
-        ],[
-            'status_guru.*.in' => 'Anda hanya dapat mengubah status menjadi Sakit, Izin, Alpa, atau DL.'
+            'keterangan_piket' => 'nullable|array', // Validasi untuk keterangan
+            'keterangan_piket.*' => 'nullable|string|max:255',
         ]);
 
         $today = now('Asia/Jakarta')->toDateString();
+        $statusInput = $request->input('status_guru', []);
+        $keteranganInput = $request->input('keterangan_piket', []);
         
-        // Hanya proses data yang di-submit dari form
-        if ($request->filled('status_guru')) {
-            foreach ($request->status_guru as $idGuru => $status) {
-                
-                // Jika user memilih status (bukan '-- Belum Diabsen --')
+        if (!empty($statusInput)) {
+            foreach ($statusInput as $idGuru => $status) {
+                // Cari laporan yang sudah ada untuk guru ini hari ini
+                $laporanExist = LaporanHarian::where('tanggal', $today)
+                                            ->where('user_id', $idGuru)
+                                            ->first();
+
+                // PENTING: Jika laporan sudah ada DAN statusnya 'Hadir' (absen mandiri),
+                // maka lewati (JANGAN diubah oleh piket).
+                if ($laporanExist && $laporanExist->status == 'Hadir') {
+                    continue; // Lanjut ke guru berikutnya
+                }
+
+                $keterangan = $keteranganInput[$idGuru] ?? null;
+
                 if (!empty($status)) {
                     LaporanHarian::updateOrCreate(
-                        // Kunci
                         ['tanggal' => $today, 'user_id' => $idGuru],
-                        // Data (catat siapa yang mengabsenkan)
-                        ['status' => $status, 'diabsen_oleh' => auth()->id()]
+                        [
+                            'status' => $status, 
+                            'diabsen_oleh' => auth()->id(),
+                            'keterangan_piket' => $keterangan // Simpan keterangan
+                        ]
                     );
-                } 
-                // Jika user memilih '-- Belum Diabsen --'
-                else {
-                    // Hapus record-nya agar kembali ke status default
+                } else {
                     LaporanHarian::where('tanggal', $today)
                                  ->where('user_id', $idGuru)
                                  ->delete();
@@ -53,8 +60,8 @@ class LaporanHarianController extends Controller
             }
         }
         
-        // Simpan Logbook
-        LogbookPiket::updateOrCreate(
+        // Simpan Logbook (tidak berubah)
+        \App\Models\LogbookPiket::updateOrCreate(
             ['tanggal' => $today],
             [
                 'kejadian_penting' => $request->kejadian_penting,
