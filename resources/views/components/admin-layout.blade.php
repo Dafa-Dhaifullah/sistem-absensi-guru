@@ -11,6 +11,8 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+     {{ $headerScripts ?? '' }}
     
 </head>
 <body class="font-sans antialiased bg-gray-100">
@@ -124,7 +126,7 @@
                             elseif (Auth::user()->role == 'kepala_sekolah') $dashboardRoute = 'kepala-sekolah.dashboard';
                         @endphp
                         <a href="{{ route($dashboardRoute) }}"
-                           class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700">
+                           class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs($dashboardRoute) ? 'sidebar-active' : '' }}"> 
                             <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21"><path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z"/><path d="M12.5 0c-.157 0-.311.01-.565.027A1 1 0 0 0 11 1.02V10h8.975a1 1 0 0 0 1-.935c.013-.188.028-.374.028-.565A8.51 8.51 0 0 0 12.5 0Z"/></svg>
                             <span x-show="!sidebarMini" x-transition>Dashboard</span>
                         </a>
@@ -137,7 +139,7 @@
 
                         <li>
                             <a href="{{ route('admin.pengguna.index', ['role' => 'admin']) }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700"
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.pengguna.*') && request('role') == 'admin' ? 'sidebar-active' : '' }}"
                                title="Data Admin">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Data Admin</span>
@@ -145,7 +147,7 @@
                         </li>
                         <li>
                             <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700"
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.pengguna.*') && request('role') == 'kepala_sekolah' ? 'sidebar-active' : '' }}"
                                title="Data Kepala Sekolah">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 14 18"><path d="M7 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm2 1H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Data Kepala Sekolah</span>
@@ -153,7 +155,7 @@
                         </li>
                         <li>
                             <a href="{{ route('admin.pengguna.index', ['role' => 'piket']) }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700"
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.pengguna.*') && request('role') == 'piket' ? 'sidebar-active' : '' }}"
                                title="Data Guru Piket">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Data Guru Piket</span>
@@ -161,7 +163,7 @@
                         </li>
                         <li>
                             <a href="{{ route('admin.pengguna.index', ['role' => 'guru']) }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700"
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.pengguna.*') && request('role') == 'guru' ? 'sidebar-active' : '' }}"
                                title="Data Guru Umum">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18"><path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1v-2a6.957 6.957 0 0 1 1.264-4H0A1 1 0 0 1 0 9v-1a1 1 0 0 1 1-1h1.264A6.957 6.957 0 0 1 0 3V1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a6.957 6.957 0 0 1-1.264 4H14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1Zm-5-4q0 .309-.034.616A6.97 6.97 0 0 1 10 9.616v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 16.616v-4.768a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 11.384V6.384a.998.998 0 0 1 .184-1.616A6.97 6.97 0 0 1 10 4.384v4.768a.998.998 0 0 1-.184 1.616A6.97 6.97 0 0 1 10 11.384Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Data Guru Umum</span>
@@ -173,28 +175,28 @@
 
                         <li>
                             <a href="{{ route('admin.jadwal-pelajaran.index') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Manajemen Jadwal Pelajaran">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.jadwal-pelajaran.*') ? 'sidebar-active' : '' }}" title="Manajemen Jadwal Pelajaran ">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M18 0H2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM13.929 17H7.071a.5.5 0 0 1-.5-.5 3.935 3.935 0 1 1 7.858 0 .5.5 0 0 1-.5.5Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Manajemen Jadwal Pelajaran</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.jadwal-piket.index') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Manajemen Jadwal Piket">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.jadwal-piket.*') ? 'sidebar-active' : '' }}" title="Manajemen Jadwal Piket">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm3.982 13.982a1 1 0 0 1-1.414 0l-3.274-3.274A1.012 1.012 0 0 1 9 10V6a1 1 0 0 1 2 0v3.586l2.982 2.982a1 1 0 0 1 0 1.414Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Manajemen Jadwal Piket</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.kalender-blok.index') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Manajemen Kalender Blok">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.kalender-blok.*') ? 'sidebar-active' : '' }}" title="Manajemen Kalender Blok">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4Zm-2 13H2V7h16v10ZM6 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Manajemen Kalender Blok</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.hari-libur.index') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Manajemen Hari Libur">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.hari-libur.*') ? 'sidebar-active' : '' }}" title="Manajemen Hari Libur">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>
                                 </svg>
@@ -209,48 +211,55 @@
                         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
 
 <li>
-    <a href="{{ route('admin.qr-log.index') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700">
-        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 21 21">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 7.418V4.582A2.582 2.582 0 0 0 4.836 2H2.254A2.254 2.254 0 0 0 0 4.254v2.582A2.254 2.254 0 0 0 2.254 9h2.582A2.582 2.582 0 0 0 7.418 6.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 4.582v2.582h2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 14.582V11.5a2.582 2.582 0 0 0-2.582-2.582H2.254A2.254 2.254 0 0 0 0 11.17v2.582A2.254 2.254 0 0 0 2.254 16h2.582A2.582 2.582 0 0 0 7.418 13.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 11.17v2.582h2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.582 7.418V4.582A2.582 2.582 0 0 0 12 2h-2.582A2.254 2.254 0 0 0 7.164 4.254v2.582A2.254 2.254 0 0 0 9.418 9H12a2.582 2.582 0 0 0 2.582-2.582Zm0 0a2.582 2.582 0 0 0-2.582-2.582H9.418"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.418 4.582v2.582H12M12.918 12h-1.5v1.5h1.5V12Zm3 3h-1.5v1.5h1.5V15Zm-3-1.5h-1.5v1.5h1.5v-1.5Zm-3 0h1.5v1.5H9.918v-1.5Zm-3-1.5h1.5v1.5H6.918V12Zm-3 1.5h1.5v1.5H3.918V13.5Zm12-1.5h1.5v1.5h-1.5V12Zm1.5 1.5h1.5v1.5h-1.5v-1.5Zm-3-1.5h1.5v1.5h-1.5v-1.5Z"/>
-        </svg> <span x-show="!sidebarMini" x-transition>Log QR Code</span>
+    <a href="{{ route('admin.laporan.terlambat.harian') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 text-white hover:bg-gray-700 {{ request()->routeIs('admin.laporan.terlambat.harian') ? 'sidebar-active' : '' }}">
+        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15V9" />
+        </svg>
+        <span x-show="!sidebarMini" x-transition>Laporan Terlambat</span>
     </a>
 </li>
+                     
+<li>
+                                <a href="{{ route('admin.laporan.override_log') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 text-white hover:bg-gray-700 {{ request()->routeIs('admin.laporan.override_log') ? 'sidebar-active' : '' }}">
+                                    <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+                                    </svg>
+                                    <span x-show="!sidebarMini" x-transition>Log Override</span></span>
+                                </a>
+                            </li>
                         <li>
                             <a href="{{ route('admin.laporan.realtime') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 bg-blue-500 hover:bg-blue-600">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 bg-blue-500 hover:bg-blue-600 {{ request()->routeIs('admin.laporan.realtime') ? 'sidebar-active' : '' }}">
                                 <svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16"><path d="M19 0H1a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1ZM2 13V2h16v11H2Z"/><path d="M5 14.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm11 .5H1a1 1 0 0 1 0-2h18a1 1 0 0 1 0 2Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Jadwal Real-time</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.laporan.bulanan') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Rekap Bulanan">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.laporan.bulanan') ? 'sidebar-active' : '' }}" title="Rekap Bulanan">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M18 16.983V18H2v-1.017C2 15.899 5.59 15 10 15s8 .899 8 1.983ZM10 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M10 0a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM10 13a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Rekap Bulanan</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.laporan.mingguan') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Rekap Mingguan">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.laporan.mingguan') ? 'sidebar-active' : '' }}" title="Rekap Mingguan">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16ZM9 13a1 1 0 0 1-1-1V8a1 1 0 0 1 2 0v4a1 1 0 0 1-1 1Zm1-5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Rekap Mingguan</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.laporan.individu') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Laporan Individu">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.laporan.individu') ? 'sidebar-active' : '' }}" title="Laporan Individu">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm-2 5a2 2 0 1 1 4 0 2 2 0 0 1-4 0Zm2 13a7.948 7.948 0 0 1-4.949-1.889A3.99 3.99 0 0 1 9 13h2a3.99 3.99 0 0 1 2.949 1.111A7.948 7.948 0 0 1 12 18Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Laporan Individu</span>
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('admin.laporan.arsip') }}"
-                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700" title="Arsip Logbook">
+                               class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs('admin.laporan.arsip') ? 'sidebar-active' : '' }}" title="Arsip Logbook">
                                 <svg class="w-5 h-5 text-gray-300 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M19.728 10.686c-2.38 2.256-6.153 4.315-9.728 4.315S2.38 12.942 0 10.686v8.139A1.175 1.175 0 0 0 1.175 20h17.65A1.175 1.175 0 0 0 20 18.825v-8.139Zm-17.65 0c2.38 2.256 6.153 4.315 9.728 4.315s7.348-2.059 9.728-4.315V2.175A1.175 1.175 0 0 0 18.825 1H1.175A1.175 1.175 0 0 0 0 2.175v8.511Z"/></svg>
                                 <span x-show="!sidebarMini" x-transition>Arsip Logbook</span>
                             </a>
@@ -393,17 +402,24 @@
                         <hr class="border-gray-700 my-2" x-show="!sidebarMini" x-transition>
                         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
 <li>
-    <a href="{{ route('admin.qr-log.index') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700">
-        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 21 21">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 7.418V4.582A2.582 2.582 0 0 0 4.836 2H2.254A2.254 2.254 0 0 0 0 4.254v2.582A2.254 2.254 0 0 0 2.254 9h2.582A2.582 2.582 0 0 0 7.418 6.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 4.582v2.582h2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.418 14.582V11.5a2.582 2.582 0 0 0-2.582-2.582H2.254A2.254 2.254 0 0 0 0 11.17v2.582A2.254 2.254 0 0 0 2.254 16h2.582A2.582 2.582 0 0 0 7.418 13.418Zm0 0a2.582 2.582 0 0 0-2.582-2.582h-2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.254 11.17v2.582h2.582"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.582 7.418V4.582A2.582 2.582 0 0 0 12 2h-2.582A2.254 2.254 0 0 0 7.164 4.254v2.582A2.254 2.254 0 0 0 9.418 9H12a2.582 2.582 0 0 0 2.582-2.582Zm0 0a2.582 2.582 0 0 0-2.582-2.582H9.418"/>
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.418 4.582v2.582H12M12.918 12h-1.5v1.5h1.5V12Zm3 3h-1.5v1.5h1.5V15Zm-3-1.5h-1.5v1.5h1.5v-1.5Zm-3 0h1.5v1.5H9.918v-1.5Zm-3-1.5h1.5v1.5H6.918V12Zm-3 1.5h1.5v1.5H3.918V13.5Zm12-1.5h1.5v1.5h-1.5V12Zm1.5 1.5h1.5v1.5h-1.5v-1.5Zm-3-1.5h1.5v1.5h-1.5v-1.5Z"/>
-        </svg> <span x-show="!sidebarMini" x-transition>Log QR Code</span>
+    <a href="{{ route('admin.laporan.terlambat.harian') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 text-white hover:bg-gray-700">
+        <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15V9" />
+        </svg>
+        <span x-show="!sidebarMini" x-transition>Laporan Terlambat</span>
     </a>
 </li>
+                       <li>
+                                <a href="{{ route('admin.laporan.override_log') }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 text-white hover:bg-gray-700 ">
+                                    <svg class="w-5 h-5 text-gray-400 transition duration-75 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+                                    </svg>
+                                    <span x-show="!sidebarMini" x-transition>Log Override</span></span>
+                                </a>
+                            </li>
+
                         <li>
                             <a href="{{ route('admin.laporan.realtime') }}"
                                class="group flex items-center gap-3 rounded-lg px-3 py-2 bg-blue-500 hover:bg-blue-600">

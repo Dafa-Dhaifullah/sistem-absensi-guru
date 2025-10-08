@@ -12,32 +12,29 @@ class QrCodeController extends Controller
      */
     public function showKios()
     {
-        // Kita akan buat view ini di langkah berikutnya
         return view('display.qr_kios');
     }
-   
+
     /**
-     * Menghasilkan token terenkripsi yang unik dan memiliki masa kedaluwarsa.
+     * Menghasilkan token terenkripsi yang unik (tanpa menyimpan log).
      */
     public function generateToken()
     {
         $waktuDibuat = now();
-        $waktuKadaluarsa = $waktuDibuat->copy()->addMinutes(2); // REVISI: Jadi 2 menit
+        $waktuKadaluarsa = $waktuDibuat->copy()->addMinutes(2);
 
         $data = [
             'timestamp' => $waktuDibuat->timestamp,
             'valid_until' => $waktuKadaluarsa->timestamp,
             'secret' => config('app.key'),
         ];
+
         $encryptedToken = Crypt::encryptString(json_encode($data));
 
-        // Simpan log ke database
-        \App\Models\QrCodeLog::create([
-            'token' => $encryptedToken,
-            'dibuat_oleh' => auth()->check() ? auth()->id() : null, // Catat siapa yg generate (jika login)
-            'waktu_kadaluarsa' => $waktuKadaluarsa,
-        ]);
+        // Logika penyimpanan ke database DIHAPUS
 
-        return response()->json(['token' => $encryptedToken]);
+        return response()->json([
+            'token' => $encryptedToken,
+        ]);
     }
 }

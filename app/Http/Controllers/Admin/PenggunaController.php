@@ -46,10 +46,10 @@ class PenggunaController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
             'email' => 'nullable|string|email|max:255|unique:users,email',
-            'nip' => 'nullable|string|max:50|unique:users,nip',
-            'no_wa' => 'nullable|string|max:20',
+            'nip' => 'nullable|numeric|unique:users,nip', // <-- Diubah ke 'numeric'
+            'no_wa' => 'nullable|numeric', // <-- Diubah ke 'numeric'
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,kepala_sekolah,piket,guru', // Validasi role dari input hidden
+            'role' => 'required|in:admin,kepala_sekolah,piket,guru',
         ]);
 
         User::create([
@@ -59,9 +59,8 @@ class PenggunaController extends Controller
             'nip' => $request->nip,
             'no_wa' => $request->no_wa,
             'password' => Hash::make($request->password),
-            'role' => $request->role, // Ambil role dari input hidden
+            'role' => $request->role,
         ]);
-
         // Redirect kembali ke halaman index DENGAN FILTER ROLE YANG SAMA
         return redirect()->route('admin.pengguna.index', ['role' => $request->role])
                          ->with('success', 'Pengguna baru berhasil ditambahkan.');
@@ -77,12 +76,12 @@ class PenggunaController extends Controller
     // Mengupdate pengguna
     public function update(Request $request, User $pengguna)
     {
-        $request->validate([
+         $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $pengguna->id,
             'email' => 'nullable|string|email|max:255|unique:users,email,' . $pengguna->id,
-            'nip' => 'nullable|string|max:50|unique:users,nip,' . $pengguna->id,
-            'no_wa' => 'nullable|string|max:20',
+            'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id, // <-- Diubah ke 'numeric'
+            'no_wa' => 'nullable|numeric', // <-- Diubah ke 'numeric'
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:admin,kepala_sekolah,piket,guru',
         ]);

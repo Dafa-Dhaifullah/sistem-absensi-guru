@@ -52,7 +52,7 @@
                             $status = $laporan ? $laporan->status : 'Belum Diabsen';
                             
                             $statusColor = 'text-gray-300';
-                            if ($status == 'Hadir') $statusColor = 'text-green-400';
+                            if ($status == 'Hadir' || $status == 'Terlambat') $statusColor = 'text-green-400';
                             if ($status == 'Sakit') $statusColor = 'text-yellow-400';
                             if ($status == 'Izin') $statusColor = 'text-blue-400';
                             if ($status == 'Alpa') $statusColor = 'text-red-500';

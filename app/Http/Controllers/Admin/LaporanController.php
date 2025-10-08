@@ -19,15 +19,12 @@ use App\Exports\LaporanMingguanExport;
 
 class LaporanController extends Controller
 {
-    /**
-     * Menampilkan laporan rekap bulanan.
-     */
+    // ... (method bulanan(), mingguan(), individu() tidak ada perubahan signifikan, sudah benar) ...
     public function bulanan(Request $request)
     {
         $bulan = (int) $request->input('bulan', now()->month);
         $tahun = (int) $request->input('tahun', now()->year);
 
-        // REVISI: Ambil pengguna dengan role 'guru', bukan 'piket'
         $semuaGuru = User::where('role', 'guru')
             ->with(['laporanHarian' => function ($query) use ($bulan, $tahun) {
                 $query->whereYear('tanggal', $tahun)->whereMonth('tanggal', $bulan);
@@ -44,23 +41,18 @@ class LaporanController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan laporan rekap mingguan.
-     */
     public function mingguan(Request $request)
     {
         $tanggalSelesai = $request->input('tanggal_selesai', now()->toDateString());
         $tanggalMulai = $request->input('tanggal_mulai', now()->subDays(6)->toDateString());
 
-        // REVISI: Ambil pengguna dengan role 'guru', bukan 'piket'
         $semuaGuru = User::where('role', 'guru')
             ->with(['laporanHarian' => function ($query) use ($tanggalMulai, $tanggalSelesai) {
                 $query->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]);
             }])
             ->orderBy('name', 'asc')->get();
 
-        // Tambahkan ->locale('id_ID') untuk memastikan Carbon menggunakan Bahasa Indonesia
-$tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::parse($tanggalSelesai));
+        $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::parse($tanggalSelesai));
 
         return view('admin.laporan.mingguan', [
             'semuaGuru' => $semuaGuru,
@@ -70,13 +62,9 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
         ]);
     }
 
-    /**
-     * Menampilkan laporan detail per individu guru.
-     */
     public function individu(Request $request)
     {
-        // REVISI: Ambil pengguna dengan role 'guru', bukan 'piket'
-        $semuaGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+        $semuaGuru = \App\Models\User::where('role', 'guru')->orderBy('name', 'asc')->get();
         $laporan = null;
         $summary = null;
         $guruTerpilih = null;
@@ -89,21 +77,26 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
                 'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             ]);
 
-            $guruTerpilih = User::findOrFail($request->user_id);
+            $guruTerpilih = \App\Models\User::findOrFail($request->user_id);
             
-            $laporan = LaporanHarian::where('user_id', $guruTerpilih->id)
+            $laporan = \App\Models\LaporanHarian::where('user_id', $guruTerpilih->id)
                 ->whereBetween('tanggal', [$request->tanggal_mulai, $request->tanggal_selesai])
                 ->orderBy('tanggal', 'asc')
                 ->get();
 
+            // ==========================================================
+            // ## REVISI DI SINI: Tambahkan perhitungan 'Terlambat' ##
+            // ==========================================================
             $summary = [
                 'Hadir' => $laporan->where('status', 'Hadir')->count(),
+                'Terlambat' => $laporan->where('status', 'Hadir')->where('status_keterlambatan', 'Terlambat')->count(), // <-- BARU
                 'Sakit' => $laporan->where('status', 'Sakit')->count(),
                 'Izin' => $laporan->where('status', 'Izin')->count(),
                 'Alpa' => $laporan->where('status', 'Alpa')->count(),
                 'DL' => $laporan->where('status', 'DL')->count(),
                 'Total' => $laporan->count()
             ];
+            // ==========================================================
         }
         
         return view('admin.laporan.individu', [
@@ -114,7 +107,6 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
             'request' => $request
         ]);
     }
-    
     /**
     * Menampilkan jadwal pelajaran yang sedang berlangsung.
     */
@@ -155,7 +147,7 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
                                 ->get();
         }
         
-        
+        // REVISI: Ambil data absensi yang sudah di-submit HARI INI
         $laporanHariIni = LaporanHarian::where('tanggal', $today->toDateString())
                             ->get()
                             ->keyBy('user_id');
@@ -165,20 +157,16 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
             'hariIni' => $hariIni,
             'jamKeSekarang' => $jamKeSekarang,
             'tipeMinggu' => $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler',
-            'laporanHariIni' => $laporanHariIni // <-- KIRIM DATA BARU INI
+            'laporanHariIni' => $laporanHariIni // <-- KIRIM DATA BARU
         ]);
     }
 
-    /**
-    * Menampilkan arsip logbook piket.
-    */
+    // ... sisa method (arsip, export) tidak berubah ...
     public function arsip(Request $request)
     {
         $logbook = LogbookPiket::latest()->paginate(15);
         return view('admin.laporan.arsip', ['logbook' => $logbook]);
     }
-
-    // --- METODE UNTUK EXPORT EXCEL ---
 
     public function exportBulanan(Request $request)
     {
@@ -222,5 +210,17 @@ $tanggalRange = Carbon::parse($tanggalMulai)->locale('id_ID')->toPeriod(Carbon::
 
         return Excel::download(new LaporanIndividuExport($guruId, $tanggalMulai, $tanggalSelesai), $namaFile);
     }
+
+    
+public function laporanTerlambatHarian()
+{
+    $laporanTerlambat = LaporanHarian::where('tanggal', now('Asia/Jakarta')->toDateString())
+        ->where('status_keterlambatan', 'Terlambat')
+        ->with('user')
+        ->orderBy('jam_absen', 'asc')
+        ->get();
+
+    return view('admin.laporan.terlambat_harian', compact('laporanTerlambat'));
+}
 }
 

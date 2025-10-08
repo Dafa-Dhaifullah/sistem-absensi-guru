@@ -1,4 +1,7 @@
 <x-admin-layout>
+    <x-slot name="headerScripts">
+        <meta http-equiv="refresh" content="60">
+    </x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard Kepala Sekolah') }}
@@ -15,6 +18,7 @@
                 
                 <!-- REVISI: Grid diubah menjadi 6 kolom agar rapi -->
                 <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    
                     <div class="p-4 bg-green-100 rounded-lg text-center">
                         <div class="text-sm font-medium text-green-800 uppercase">Hadir</div>
                         <div class="text-3xl font-bold text-green-900">{{ $summaryHariIni['hadir'] }}</div>

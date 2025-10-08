@@ -17,11 +17,14 @@ class LaporanHarianController extends Controller
      */
     public function store(Request $request)
     {
+        // Validasi input
         $request->validate([
             'status_guru' => 'nullable|array', 
             'status_guru.*' => 'nullable|in:Sakit,Izin,DL,Alpa',
-            'keterangan_piket' => 'nullable|array', // Validasi untuk keterangan
+            'keterangan_piket' => 'nullable|array',
             'keterangan_piket.*' => 'nullable|string|max:255',
+        ],[
+            'status_guru.*.in' => 'Anda hanya dapat mengubah status menjadi Sakit, Izin, Alpa, atau DL.'
         ]);
 
         $today = now('Asia/Jakarta')->toDateString();
@@ -30,38 +33,59 @@ class LaporanHarianController extends Controller
         
         if (!empty($statusInput)) {
             foreach ($statusInput as $idGuru => $status) {
+                
                 // Cari laporan yang sudah ada untuk guru ini hari ini
                 $laporanExist = LaporanHarian::where('tanggal', $today)
                                             ->where('user_id', $idGuru)
                                             ->first();
 
-                // PENTING: Jika laporan sudah ada DAN statusnya 'Hadir' (absen mandiri),
-                // maka lewati (JANGAN diubah oleh piket).
+                // PENTING: Jika guru sudah absen mandiri (status 'Hadir'), lewati.
                 if ($laporanExist && $laporanExist->status == 'Hadir') {
-                    continue; // Lanjut ke guru berikutnya
+                    continue; 
                 }
 
                 $keterangan = $keteranganInput[$idGuru] ?? null;
+                
+                // ==========================================================
+                // ## LOGIKA BARU: CATAT LOG OVERRIDE ##
+                // ==========================================================
+                $statusLama = $laporanExist ? $laporanExist->status : 'Belum Absen';
+                $statusBaru = $status ?: 'Belum Absen'; // Jika dikosongkan, anggap 'Belum Absen'
+                
+                // Catat log HANYA JIKA ada perubahan status
+                if ($statusLama !== $statusBaru) {
+                    OverrideLog::create([
+                        'piket_user_id' => auth()->id(),
+                        'guru_user_id' => $idGuru,
+                        'tanggal' => $today,
+                        'status_lama' => $statusLama,
+                        'status_baru' => $statusBaru,
+                        'keterangan' => $keterangan,
+                    ]);
+                }
+                // ==========================================================
+
 
                 if (!empty($status)) {
                     LaporanHarian::updateOrCreate(
                         ['tanggal' => $today, 'user_id' => $idGuru],
                         [
                             'status' => $status, 
-                            'diabsen_oleh' => auth()->id(),
-                            'keterangan_piket' => $keterangan // Simpan keterangan
+                            'diabsen_oleh' => auth()->id(), // Catat ID Guru Piket
+                            'keterangan_piket' => $keterangan
                         ]
                     );
                 } else {
-                    LaporanHarian::where('tanggal', $today)
-                                 ->where('user_id', $idGuru)
-                                 ->delete();
+                    // Jika status dikosongkan, hapus record-nya
+                    if ($laporanExist) {
+                        $laporanExist->delete();
+                    }
                 }
             }
         }
         
-        // Simpan Logbook (tidak berubah)
-        \App\Models\LogbookPiket::updateOrCreate(
+        // Simpan Logbook Kejadian
+        LogbookPiket::updateOrCreate(
             ['tanggal' => $today],
             [
                 'kejadian_penting' => $request->kejadian_penting,

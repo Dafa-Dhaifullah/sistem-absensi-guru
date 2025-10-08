@@ -9,26 +9,19 @@ use App\Models\KalenderBlok;
 use App\Models\JadwalPelajaran;
 use App\Models\JadwalPiket;
 use App\Models\LaporanHarian;
+use App\Models\MasterJamPelajaran; // <-- Import Baru
 use App\Models\User;
-use App\Models\HariLibur; // <-- IMPORT BARU
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
         $today = now('Asia/Jakarta');
-
-        // ==========================================================
-        // ## LOGIKA BARU: CEK HARI LIBUR ##
-        // ==========================================================
-        $hariLibur = HariLibur::where('tanggal', $today->toDateString())->first();
+        
+        $hariLibur = \App\Models\HariLibur::where('tanggal', $today->toDateString())->first();
         if ($hariLibur) {
-            // Jika hari ini libur, langsung tampilkan view libur
             return view('piket.libur', ['keterangan' => $hariLibur->keterangan]);
         }
-        // ==========================================================
-        
-        // --- Sisa logika berjalan jika hari ini BUKAN hari libur ---
         
         $hariMap = [
             'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
@@ -60,15 +53,27 @@ class DashboardController extends Controller
             if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
         }
 
-        $jadwalGuruIds = JadwalPelajaran::where('hari', $hariIni)
+        // ==========================================================
+        // ## REVISI LOGIKA PENGAMBILAN DATA ##
+        // ==========================================================
+        
+        // 1. Ambil SEMUA jadwal pelajaran untuk hari ini
+        $semuaJadwalHariIni = JadwalPelajaran::where('hari', $hariIni)
                             ->whereIn('tipe_blok', $blokValid)
-                            ->pluck('user_id')
-                            ->unique();
-
-        $guruWajibHadir = User::whereIn('id', $jadwalGuruIds)
-                            ->where('role', 'guru')
-                            ->orderBy('name', 'asc')
+                            ->with('user') // Eager load relasi user
                             ->get();
+
+        // 2. Ambil daftar guru unik dari jadwal tersebut
+        $guruWajibHadir = $semuaJadwalHariIni->pluck('user')
+                            ->where('role', 'guru')
+                            ->unique('id')
+                            ->sortBy('name');
+
+        // 3. Ambil Master Jam Pelajaran untuk hari ini agar mudah dicari
+        $masterJamHariIni = MasterJamPelajaran::where('hari', $hariIni)->get()->keyBy('jam_ke');
+        
+        // ==========================================================
+
 
         $laporanHariIni = LaporanHarian::where('tanggal', $today->toDateString())
                             ->get()
@@ -76,6 +81,8 @@ class DashboardController extends Controller
 
         return view('piket.dashboard', [
             'guruWajibHadir' => $guruWajibHadir,
+            'semuaJadwalHariIni' => $semuaJadwalHariIni, // <-- Kirim data baru
+            'masterJamHariIni' => $masterJamHariIni, // <-- Kirim data baru
             'hariIni' => $hariIni,
             'tipeMinggu' => $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler',
             'laporanHariIni' => $laporanHariIni

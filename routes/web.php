@@ -24,9 +24,10 @@ use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
 use App\Http\Controllers\Guru\AbsenController;
 use App\Http\Controllers\Piket\DashboardController as PiketDashboardController;
 use App\Http\Controllers\Piket\LaporanHarianController;
+use App\Http\Controllers\Admin\OverrideLogController;
 use App\Http\Controllers\Piket\GantiPasswordController;
 use App\Http\Controllers\Guru\RiwayatController;
-use App\Http\controller\Admin\QrLogController;
+
 
 
 /*
@@ -96,14 +97,16 @@ Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name(
     Route::get('laporan/mingguan', [LaporanController::class, 'mingguan'])->name('laporan.mingguan');
     Route::get('laporan/individu', [LaporanController::class, 'individu'])->name('laporan.individu');
     Route::get('laporan/arsip', [LaporanController::class, 'arsip'])->name('laporan.arsip');
+
+    Route::get('laporan/override-log', [OverrideLogController::class, 'index'])->name('laporan.override_log');
     
     // Rute Export Excel
     Route::get('laporan/export/bulanan', [LaporanController::class, 'exportBulanan'])->name('laporan.export.bulanan');
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
     Route::get('laporan/export/arsip', [LaporanController::class, 'exportArsip'])->name('laporan.export.arsip');
+    Route::get('laporan/terlambat-harian', [LaporanController::class, 'laporanTerlambatHarian'])->name('laporan.terlambat.harian');
 
-    Route::get('log-qrcode', [\App\Http\Controllers\Admin\QrLogController::class, 'index'])->name('qr-log.index');
 });
 
 // ======================================================================

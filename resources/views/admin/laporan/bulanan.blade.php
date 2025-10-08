@@ -74,6 +74,7 @@
                                                 $status = $laporan ? $laporan->status : '';
                                                 $bgColor = 'bg-white';
                                                 if ($status == 'Hadir') $bgColor = 'bg-blue-100';
+                                                if ($status == 'Hadir' && $laporan->status_keterlambatan == 'Terlambat') $bgColor = 'bg-orange-100';
                                                 if ($status == 'Sakit') $bgColor = 'bg-green-100';
                                                 if ($status == 'Izin') $bgColor = 'bg-yellow-100';
                                                 if ($status == 'Alpa') $bgColor = 'bg-red-200 font-bold';

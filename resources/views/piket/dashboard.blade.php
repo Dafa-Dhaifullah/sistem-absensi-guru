@@ -1,4 +1,7 @@
 <x-teacher-layout>
+     <x-slot name="headerScripts">
+        <meta http-equiv="refresh" content="60">
+    </x-slot>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dasbor Pemantauan Piket') }}
@@ -12,9 +15,7 @@
             @if (session('success'))
                 <div class="p-4 rounded-lg bg-green-50 text-green-800 flex items-start gap-4 shadow-sm">
                     <div class="flex-shrink-0">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
                     </div>
                     <p class="text-sm font-medium">{{ session('success') }}</p>
                 </div>
@@ -22,9 +23,7 @@
             @if ($errors->any())
                 <div class="p-4 rounded-lg bg-red-50 text-red-800 flex items-start gap-4 shadow-sm">
                      <div class="flex-shrink-0">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                        </svg>
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
                     </div>
                     <div>
                         <p class="font-bold text-sm">Gagal menyimpan data:</p>
@@ -37,46 +36,63 @@
                 </div>
             @endif
 
-            {{-- Kartu Petunjuk Tugas --}}
+            {{-- Kartu Petunjuk Tugas (Kolapsibel) --}}
+            <div x-data="{ open: true }" class="bg-white p-6 rounded-xl shadow-sm">
+                <button @click="open = !open" class="w-full flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">Petunjuk Tugas Guru Piket</h3>
+                    <svg class="w-6 h-6 text-gray-500 transform transition-transform" :class="{'rotate-180': open}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div x-show="open" x-transition class="mt-6 border-t pt-6">
+                    <p class="text-sm text-gray-600 mb-5">Ikuti langkah-langkah berikut untuk memastikan semua berjalan lancar.</p>
+                    <div class="space-y-5">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Pantau Status Kehadiran</h4>
+                                <p class="text-sm text-gray-600">Lihat tabel di bawah untuk memantau status guru. Halaman ini akan memuat ulang data secara otomatis setiap 1 menit.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Hubungi Guru</h4>
+                                <p class="text-sm text-gray-600">Jika ada guru berstatus "Belum Absen" mendekati atau lebih dari Jam Pertama masuknya, gunakan tombol WhatsApp untuk konfirmasi.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Gunakan Aksi Override</h4>
+                                <p class="text-sm text-gray-600">Jika guru melapor (Sakit/Izin/DL) atau terkendala, ubah statusnya dan **wajib mengisi kolom keterangan**.</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Isi Logbook (Opsional)</h4>
+                                <p class="text-sm text-gray-600">Catat kejadian penting dan tindak lanjutnya pada formulir logbook di bagian bawah.</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">5</div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Simpan Perubahan</h4>
+                                <p class="text-sm text-gray-600">Setelah selesai, klik tombol "Simpan Perubahan" di paling bawah untuk merekam semua aksi Anda.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="text-xl font-bold text-gray-800">Petunjuk Tugas Guru Piket</h3>
-                <p class="mt-1 text-sm text-gray-600">Ikuti langkah-langkah berikut untuk memastikan semua berjalan lancar.</p>
-                <div class="mt-6 space-y-5">
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">1</div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Pantau Status Kehadiran</h4>
-                            <p class="text-sm text-gray-600">Lihat tabel di bawah untuk memantau status guru. Data akan diperbarui secara otomatis.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">2</div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Hubungi Guru</h4>
-                            <p class="text-sm text-gray-600">Jika ada guru berstatus "Belum Absen", gunakan tombol WhatsApp untuk konfirmasi.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">3</div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Gunakan Aksi Override</h4>
-                            <p class="text-sm text-gray-600">Jika guru melapor (Sakit/Izin/DL) atau terkendala, ubah statusnya dan beri keterangan pada kolom yang tersedia.</p>
-                        </div>
-                    </div>
-                     <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">4</div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Isi Logbook (Opsional)</h4>
-                            <p class="text-sm text-gray-600">Catat kejadian penting dan tindak lanjutnya pada formulir logbook di bagian bawah.</p>
-                        </div>
-                    </div>
-                     <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">5</div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Simpan Perubahan</h4>
-                            <p class="text-sm text-gray-600">Setelah selesai, klik tombol "Simpan Perubahan" di paling bawah untuk merekam semua aksi Anda.</p>
-                        </div>
-                    </div>
+                <h4 class="font-semibold text-gray-800">Keterangan Warna Status</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-6 gap-y-3 mt-4 text-sm text-gray-600">
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-green-100 border mr-2"></div> Hadir</span>
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-orange-100 border mr-2"></div> Terlambat</span>
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-yellow-100 border mr-2"></div> Sakit</span>
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-blue-100 border mr-2"></div> Izin</span>
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-red-100 border mr-2"></div> Alpa</span>
+                    <span class="inline-flex items-center"><div class="w-4 h-4 rounded-full bg-gray-200 border mr-2"></div> Belum Absen</span>
                 </div>
             </div>
 
@@ -104,9 +120,10 @@
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-slate-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Guru</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Jam Pertama</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status Saat Ini</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi Override</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan (jika override)</th>
@@ -119,15 +136,17 @@
                                         $laporan = $laporanHariIni->get($guru->id);
                                         $statusTersimpan = $laporan ? $laporan->status : null;
                                         $keteranganTersimpan = $laporan ? $laporan->keterangan_piket : null;
-                                        $statusKeterlambatan = $laporan ? $laporan->status_keterlambatan : null;
-
                                         $isHadir = $statusTersimpan == 'Hadir';
 
+                                        $jadwalGuruIni = $semuaJadwalHariIni->where('user_id', $guru->id);
+                                        $jamPertama = $jadwalGuruIni->min('jam_ke');
+                                        $waktuMulai = $masterJamHariIni->get($jamPertama) ? \Carbon\Carbon::parse($masterJamHariIni->get($jamPertama)->jam_mulai)->format('H:i') : 'N/A';
+                                        
                                         $statusText = 'Belum Absen';
                                         $statusColor = 'bg-gray-100 text-gray-800';
                                         if ($isHadir) {
-                                            $statusText = $statusKeterlambatan == 'Terlambat' ? 'Terlambat' : 'Hadir';
-                                            $statusColor = $statusKeterlambatan == 'Terlambat' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800';
+                                            $statusText = ($laporan->status_keterlambatan == 'Terlambat') ? 'Terlambat' : 'Hadir';
+                                            $statusColor = ($laporan->status_keterlambatan == 'Terlambat') ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800';
                                         } elseif ($statusTersimpan) {
                                             $statusText = $statusTersimpan;
                                             if ($statusTersimpan == 'Sakit') $statusColor = 'bg-yellow-100 text-yellow-800';
@@ -138,16 +157,20 @@
                                     @endphp
                                     <tr class="odd:bg-white even:bg-slate-50">
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $guru->name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">
+                                            @if ($jamPertama)
+                                                Jam ke-{{ $jamPertama }} ({{ $waktuMulai }})
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
                                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColor }}">
                                                 {{ $statusText }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <select name="status_guru[{{ $guru->id }}]" class="rounded-md border-gray-300 shadow-sm text-sm w-full 
-                                                @if($isHadir) bg-gray-100 text-gray-500 cursor-not-allowed @endif"
-                                                @if($isHadir) disabled @endif>
-                                                
+                                            <select name="status_guru[{{ $guru->id }}]" class="rounded-md border-gray-300 shadow-sm text-sm w-full disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed" {{ $isHadir ? 'disabled' : '' }}>
                                                 <option value="" @if(!$statusTersimpan) selected @endif>-- Belum Diabsen --</option>
                                                 <option value="Sakit" @if($statusTersimpan == 'Sakit') selected @endif>Sakit</option>
                                                 <option value="Izin" @if($statusTersimpan == 'Izin') selected @endif>Izin</option>
@@ -161,10 +184,9 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <input type="text" 
                                                    name="keterangan_piket[{{ $guru->id }}]" 
-                                                   value="{{ $keteranganTersimpan }}"
+                                                   value="{{ old('keterangan_piket.'.$guru->id, $keteranganTersimpan) }}"
                                                    placeholder="Catatan..."
-                                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm
-                                                          disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
                                                    {{ $isHadir ? 'disabled' : '' }}>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -183,7 +205,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-500">
+                                        <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">
                                             Tidak ada guru yang terjadwal untuk piket hari ini.
                                         </td>
                                     </tr>
@@ -211,7 +233,6 @@
                     </div>
                 </div>
 
-
                 {{-- Tombol Aksi Simpan --}}
                 <div class="flex items-center justify-end mt-6">
                     <x-primary-button type="submit">
@@ -222,5 +243,13 @@
 
         </div>
     </div>
-</x-teacher-layout>
 
+    @push('scripts')
+        <script>
+            // Auto-refresh halaman setiap 60 detik (1 menit)
+            setTimeout(() => {
+                window.location.reload();
+            }, 60000);
+        </script>
+    @endpush
+</x-teacher-layout>

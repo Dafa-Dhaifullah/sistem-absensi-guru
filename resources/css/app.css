@@ -13,3 +13,14 @@
         @apply sm:ml-16;
     }
 }
+
+/* Style untuk menu sidebar yang aktif */
+.sidebar-active {
+    background-color: #374151; /* Warna bg-gray-700 di Tailwind */
+    color: #ffffff; /* Warna text-white di Tailwind */
+}
+
+/* Juga buat ikonnya menjadi putih saat aktif */
+.sidebar-active svg {
+    color: #ffffff;
+}
