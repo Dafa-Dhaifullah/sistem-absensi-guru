@@ -30,6 +30,7 @@ use App\Http\Controllers\Guru\RiwayatController;
 
 
 
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes

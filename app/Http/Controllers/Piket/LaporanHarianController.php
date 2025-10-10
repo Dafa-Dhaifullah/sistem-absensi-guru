@@ -8,6 +8,7 @@ use App\Models\LaporanHarian;
 use App\Models\LogbookPiket;
 use App\Models\KalenderBlok;
 use App\Models\JadwalPelajaran;
+use App\Models\OverrideLog;
 use Illuminate\Support\Carbon;
 
 class LaporanHarianController extends Controller
@@ -17,7 +18,6 @@ class LaporanHarianController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'status_guru' => 'nullable|array', 
             'status_guru.*' => 'nullable|in:Sakit,Izin,DL,Alpa',
@@ -27,56 +27,48 @@ class LaporanHarianController extends Controller
             'status_guru.*.in' => 'Anda hanya dapat mengubah status menjadi Sakit, Izin, Alpa, atau DL.'
         ]);
 
-        $today = now('Asia/Jakarta')->toDateString();
+        $today = now('Asia/Jakarta'); // Ubah ini agar kita bisa ambil jamnya
         $statusInput = $request->input('status_guru', []);
         $keteranganInput = $request->input('keterangan_piket', []);
         
         if (!empty($statusInput)) {
             foreach ($statusInput as $idGuru => $status) {
                 
-                // Cari laporan yang sudah ada untuk guru ini hari ini
-                $laporanExist = LaporanHarian::where('tanggal', $today)
+                $laporanExist = \App\Models\LaporanHarian::where('tanggal', $today->toDateString())
                                             ->where('user_id', $idGuru)
                                             ->first();
 
-                // PENTING: Jika guru sudah absen mandiri (status 'Hadir'), lewati.
                 if ($laporanExist && $laporanExist->status == 'Hadir') {
                     continue; 
                 }
 
                 $keterangan = $keteranganInput[$idGuru] ?? null;
                 
-                // ==========================================================
-                // ## LOGIKA BARU: CATAT LOG OVERRIDE ##
-                // ==========================================================
                 $statusLama = $laporanExist ? $laporanExist->status : 'Belum Absen';
-                $statusBaru = $status ?: 'Belum Absen'; // Jika dikosongkan, anggap 'Belum Absen'
+                $statusBaru = $status ?: 'Belum Absen';
                 
-                // Catat log HANYA JIKA ada perubahan status
                 if ($statusLama !== $statusBaru) {
-                    OverrideLog::create([
+                    \App\Models\OverrideLog::create([
                         'piket_user_id' => auth()->id(),
                         'guru_user_id' => $idGuru,
-                        'tanggal' => $today,
+                        'tanggal' => $today->toDateString(),
                         'status_lama' => $statusLama,
                         'status_baru' => $statusBaru,
                         'keterangan' => $keterangan,
                     ]);
                 }
-                // ==========================================================
-
 
                 if (!empty($status)) {
-                    LaporanHarian::updateOrCreate(
-                        ['tanggal' => $today, 'user_id' => $idGuru],
+                    \App\Models\LaporanHarian::updateOrCreate(
+                        ['tanggal' => $today->toDateString(), 'user_id' => $idGuru],
                         [
                             'status' => $status, 
-                            'diabsen_oleh' => auth()->id(), // Catat ID Guru Piket
-                            'keterangan_piket' => $keterangan
+                            'diabsen_oleh' => auth()->id(),
+                            'keterangan_piket' => $keterangan,
+                            'jam_absen' => $today->toTimeString(),
                         ]
                     );
                 } else {
-                    // Jika status dikosongkan, hapus record-nya
                     if ($laporanExist) {
                         $laporanExist->delete();
                     }
@@ -84,9 +76,8 @@ class LaporanHarianController extends Controller
             }
         }
         
-        // Simpan Logbook Kejadian
-        LogbookPiket::updateOrCreate(
-            ['tanggal' => $today],
+        \App\Models\LogbookPiket::updateOrCreate(
+            ['tanggal' => $today->toDateString()],
             [
                 'kejadian_penting' => $request->kejadian_penting,
                 'tindak_lanjut' => $request->tindak_lanjut,

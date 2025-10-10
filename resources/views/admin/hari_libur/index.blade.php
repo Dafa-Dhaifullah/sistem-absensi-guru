@@ -15,12 +15,6 @@
                         </a>
                     </div>
 
-                    @if (session('success'))
-                        <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -33,14 +27,30 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($semuaHariLibur as $libur)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($libur->tanggal)->isoFormat('dddd, D MMMM YYYY') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($libur->tanggal)->locale('id_ID')->isoFormat('dddd, D MMMM YYYY') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $libur->keterangan }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <form action="{{ route('admin.hari-libur.destroy', $libur->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus?');">
+                                                <form x-ref="form{{$libur->id }}" action="{{ route('admin.hari-libur.destroy', $libur->id) }}" method="POST" class="inline">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
-                                            </form>
+                                                    @method('DELETE')
+                                                    <button type="button" @click.prevent="
+                                                        Swal.fire({
+                                                            title: 'Anda Yakin?',
+                                                            text: 'Data hari libur ini akan dihapus.',
+                                                            icon: 'warning',
+                                                            showCancelButton: true,
+                                                            confirmButtonColor: '#d33',
+                                                            cancelButtonColor: '#3085d6',
+                                                            confirmButtonText: 'Ya, hapus!',
+                                                            cancelButtonText: 'Batal'
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) {
+                                                                $refs.form{{ $libur->id }}.submit();
+                                                            }
+                                                        })
+                                                    " class="text-red-600 hover:text-red-900 ml-2">Hapus</button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty

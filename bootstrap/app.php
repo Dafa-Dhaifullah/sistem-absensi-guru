@@ -17,4 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
+    })
+     ->withSchedule(function (Schedule $schedule) {
+        // Jalankan perintah hapus foto setiap hari pada jam 2 pagi
+        $schedule->command('app:hapus-foto-selfie-lama')->dailyAt('02:00');
     })->create();

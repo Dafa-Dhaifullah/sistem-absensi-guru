@@ -1,7 +1,7 @@
 <x-admin-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Laporan Log Override Piket') }}
+            {{ __('Laporan Log Aktivitas Piket') }}
         </h2>
     </x-slot>
 
@@ -27,7 +27,7 @@
                                 @forelse($logs as $log)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $log->created_at->isoFormat('dddd, D MMM YYYY - HH:mm') }}
+                                        {{ $log->created_at->locale('id_ID')->isoFormat('dddd, D MMM YYYY - HH:mm') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $log->piket->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->guru->name ?? 'N/A' }}</td>

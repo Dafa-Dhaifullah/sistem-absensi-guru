@@ -10,32 +10,6 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-
-            {{-- Notifikasi Sukses & Error --}}
-            @if (session('success'))
-                <div class="p-4 rounded-lg bg-green-50 text-green-800 flex items-start gap-4 shadow-sm">
-                    <div class="flex-shrink-0">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                    </div>
-                    <p class="text-sm font-medium">{{ session('success') }}</p>
-                </div>
-            @endif
-            @if ($errors->any())
-                <div class="p-4 rounded-lg bg-red-50 text-red-800 flex items-start gap-4 shadow-sm">
-                     <div class="flex-shrink-0">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm">Gagal menyimpan data:</p>
-                        <ul class="mt-1 list-disc list-inside text-sm">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-            @endif
-
             {{-- Kartu Petunjuk Tugas (Kolapsibel) --}}
             <div x-data="{ open: true }" class="bg-white p-6 rounded-xl shadow-sm">
                 <button @click="open = !open" class="w-full flex justify-between items-center">
@@ -63,7 +37,7 @@
                             <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">3</div>
                             <div>
                                 <h4 class="font-semibold text-gray-800">Gunakan Aksi Override</h4>
-                                <p class="text-sm text-gray-600">Jika guru melapor (Sakit/Izin/DL) atau terkendala, ubah statusnya dan **wajib mengisi kolom keterangan**.</p>
+                                <p class="text-sm text-gray-600">Jika guru melapor (Sakit/Izin/DL) atau terkendala, ubah statusnya dan <strong>wajib mengisi kolom keterangan</strong>.</p>
                             </div>
                         </div>
                          <div class="flex items-start gap-4">
@@ -97,7 +71,7 @@
             </div>
 
             {{-- Form Utama --}}
-            <form action="{{ route('piket.laporan-harian.store') }}" method="POST">
+            <form x-data x-ref="formPiket" action="{{ route('piket.laporan-harian.store') }}" method="POST">
                 @csrf
                 
                 {{-- Kartu Tabel Kehadiran --}}
@@ -234,8 +208,23 @@
                 </div>
 
                 {{-- Tombol Aksi Simpan --}}
-                <div class="flex items-center justify-end mt-6">
-                    <x-primary-button type="submit">
+                 <div class="flex items-center justify-end mt-6">
+                    <x-primary-button type="button" @click.prevent="
+                        Swal.fire({
+                            title: 'Simpan Perubahan?',
+                            text: 'Status kehadiran guru akan diperbarui.',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Ya, simpan!',
+                            cancelButtonText: 'Batal'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $refs.formPiket.submit();
+                            }
+                        })
+                    ">
                         {{ __('Simpan Perubahan') }}
                     </x-primary-button>
                 </div>

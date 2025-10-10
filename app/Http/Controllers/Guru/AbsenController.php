@@ -9,13 +9,16 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\LaporanHarian;
 use App\Models\JadwalPelajaran;
-use App\Models\QrCodeLog;
 use Carbon\Carbon;
 
 class AbsenController extends Controller
 {
+    /**
+     * Menyimpan data absensi mandiri dari guru.
+     */
     public function store(Request $request)
     {
+        // 1. Validasi Input Dasar
         $request->validate([
             'qr_token' => 'required|string',
             'foto_selfie' => 'required|image|max:2048',
@@ -24,32 +27,37 @@ class AbsenController extends Controller
         $user = Auth::user();
         $today = now('Asia/Jakarta');
 
-        // REVISI: Validasi Token QR Code
-        try {
-            // Update status log menjadi 'Di-scan'
-            $qrLog = QrCodeLog::where('token', $request->qr_token)->firstOrFail();
-            
-            // Cek apakah token sudah pernah di-scan
-            if ($qrLog->status == 'Di-scan') {
-                throw new \Exception('QR Code ini sudah pernah digunakan.');
-            }
-            
-            // REVISI: Waktu kedaluwarsa jadi 2 menit + toleransi 15 detik
-            $waktuKadaluarsaDenganToleransi = Carbon::parse($qrLog->waktu_kadaluarsa)->addSeconds(15);
-            if ($today->isAfter($waktuKadaluarsaDenganToleransi)) {
-                $qrLog->update(['status' => 'Kedaluwarsa']);
-                throw new \Exception('QR Code sudah kedaluwarsa.');
-            }
-            
-            // Jika berhasil, update status log
-            $qrLog->increment('jumlah_scan');
-            $qrLog->update(['status' => 'Di-scan']);
+        // ==========================================================
+        // ## REVISI LOGIKA PENGAMANAN ##
+        // ==========================================================
+        // Cari laporan yang sudah ada untuk hari ini
+        $laporanHariIni = LaporanHarian::where('user_id', $user->id)
+                                ->whereDate('tanggal', $today->toDateString())
+                                ->first();
+        
+        // Blokir HANYA JIKA guru ini sudah pernah absen mandiri (status Hadir)
+        if ($laporanHariIni && $laporanHariIni->status == 'Hadir' && $laporanHariIni->diabsen_oleh == $user->id) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah melakukan absensi mandiri hari ini.']);
+        }
+        // ==========================================================
 
-        } catch (\Exception $e) {
+
+        // 2. Validasi Token QR Code (Tidak berubah)
+        try {
+            $decryptedToken = Crypt::decryptString($request->qr_token);
+            $tokenData = json_decode($decryptedToken, true);
+            
+            $waktuKadaluarsaDenganToleransi = Carbon::createFromTimestamp($tokenData['valid_until'])->addSeconds(15);
+            if ($today->isAfter($waktuKadaluarsaDenganToleransi) || $tokenData['secret'] !== config('app.key')) {
+                throw new \Exception('Token tidak valid atau kedaluwarsa.');
+            }
+            // (Logika update QrCodeLog sudah dihapus, jadi aman)
+
+        } catch (DecryptException | \Exception $e) {
             return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: ' . $e->getMessage()]);
         }
 
-        // REVISI: Patokan keterlambatan jadi 15 menit
+        // 3. Tentukan Status Keterlambatan (Tidak berubah)
         $jadwalPertama = $user->jadwalPelajaran()
             ->where('hari', ['Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'][$today->format('l')])
             ->orderBy('jam_ke', 'asc')
@@ -63,22 +71,33 @@ class AbsenController extends Controller
             ->where('jam_ke', $jadwalPertama->jam_ke)
             ->first();
         
-        // REVISI: Beri toleransi 15 menit dari jam mulai
         $batasWaktuMasuk = Carbon::parse($masterJamPertama->jam_mulai)->addMinutes(15);
         $statusKeterlambatan = ($today->isAfter($batasWaktuMasuk)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // ... (Sisa kode untuk Simpan Foto dan Simpan Laporan tidak berubah)
+        // 4. Simpan Foto Selfie (Tidak berubah)
         $pathFoto = $request->file('foto_selfie')->store('public/selfies/' . $today->format('Y-m'));
-        LaporanHarian::create([
-            'tanggal' => $today->toDateString(),
-            'user_id' => $user->id,
-            'status' => 'Hadir',
-            'jam_absen' => $today->toTimeString(),
-            'foto_selfie_path' => $pathFoto,
-            'status_keterlambatan' => $statusKeterlambatan,
-            'diabsen_oleh' => $user->id,
-        ]);
 
-        return redirect()->route('guru.dashboard')->with('success', 'Absensi berhasil! Status Anda: ' . $statusKeterlambatan);
+        // ==========================================================
+        // ## REVISI LOGIKA PENYIMPANAN ##
+        // ==========================================================
+        // 5. Gunakan updateOrCreate untuk menimpa data lama (jika ada)
+        LaporanHarian::updateOrCreate(
+            // Kunci untuk mencari:
+            [
+                'tanggal' => $today->toDateString(),
+                'user_id' => $user->id,
+            ],
+            // Data yang di-update atau di-insert:
+            [
+                'status' => 'Hadir',
+                'jam_absen' => $today->toTimeString(),
+                'foto_selfie_path' => $pathFoto,
+                'status_keterlambatan' => $statusKeterlambatan,
+                'diabsen_oleh' => $user->id,
+                'keterangan_piket' => null // Hapus catatan piket lama
+            ]
+        );
+
+        return redirect()->route('guru.dashboard')->with('success', 'Absensi berhasil! Status Anda telah diperbarui menjadi Hadir.');
     }
 }

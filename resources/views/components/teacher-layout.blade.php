@@ -14,10 +14,21 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         {{ $headerScripts ?? '' }}
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
+            @if(session('success'))
+            <x-notification type="success" :message="session('success')" />
+        @endif
+        @if(session('error'))
+            <x-notification type="error" :message="session('error')" />
+        @endif
+        @if($errors->any())
+             <x-notification type="error" :message="$errors->first()" />
+        @endif
             
             <!-- ========================================================== -->
             <!-- == KODE NAVIGASI (DARI PARTIAL) SEKARANG DI SINI == -->

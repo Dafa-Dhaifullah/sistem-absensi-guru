@@ -9,7 +9,7 @@ use App\Models\KalenderBlok;
 use App\Models\JadwalPelajaran;
 use App\Models\JadwalPiket;
 use App\Models\LaporanHarian;
-use App\Models\MasterJamPelajaran; // <-- Import Baru
+use App\Models\MasterJamPelajaran; 
 use App\Models\User;
 
 class DashboardController extends Controller

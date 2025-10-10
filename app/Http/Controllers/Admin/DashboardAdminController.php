@@ -10,30 +10,40 @@ use Illuminate\Http\Request;
 class DashboardAdminController extends Controller
 {
     public function index()
-    {
-        // REVISI: Hitung guru dari tabel 'users'
-        $jumlahGuru = User::whereIn('role', ['guru', 'piket'])->count(); 
-        $jumlahAkunPiket = User::where('role', 'piket')->count();
-        $jumlahJadwal = JadwalPelajaran::count();
+{
+    // --- DATA STATISTIK (Tidak berubah) ---
+    $jumlahGuru = \App\Models\User::whereIn('role', ['guru', 'piket'])->count(); 
+    $jumlahAkunPiket = \App\Models\User::where('role', 'piket')->count();
+    $jumlahJadwal = \App\Models\JadwalPelajaran::count();
 
-        // REVISI: Logika notifikasi sekarang menggunakan relasi dari User
-        $statusTidakHadir = ['Sakit', 'Izin', 'Alpa']; 
-        $batasAbsen = 4;
+    // ==========================================================
+    // ## LOGIKA NOTIFIKASI YANG SUDAH DIPERBAIKI ##
+    // ==========================================================
 
-        $guruWarning = User::whereIn('role', ['guru', 'piket']) // Hanya cek guru
-            ->whereHas('laporanHarian', function ($query) use ($statusTidakHadir) {
-                $query->whereIn('status', $statusTidakHadir)
-                      ->whereMonth('tanggal', now()->month)
-                      ->whereYear('tanggal', now()->year);
-            }, '>=', $batasAbsen)
-            ->withCount(['laporanHarian' => function ($query) use ($statusTidakHadir) {
-                $query->whereIn('status', $statusTidakHadir)
-                      ->whereMonth('tanggal', now()->month)
-                      ->whereYear('tanggal', now()->year);
-            }])->get();
+    $statusTidakHadir = ['Sakit', 'Izin', 'Alpa','DL']; 
+    $batasAbsen = 4;
 
-        return view('admin.dashboard', compact(
-            'jumlahGuru', 'jumlahAkunPiket', 'jumlahJadwal', 'guruWarning'
-        ));
-    }
+    // Query yang lebih andal:
+    // 1. Hitung dulu jumlah ketidakhadiran bulan ini untuk semua guru.
+    // 2. Kemudian, filter (having) hanya yang jumlahnya >= batas.
+    $guruWarning = \App\Models\User::where('role', 'guru')
+        ->withCount(['laporanHarian as total_tidak_hadir' => function ($query) use ($statusTidakHadir) {
+            $query->whereIn('status', $statusTidakHadir)
+                  ->whereMonth('tanggal', now()->month)
+                  ->whereYear('tanggal', now()->year);
+        }])
+        ->having('total_tidak_hadir', '>=', $batasAbsen)
+        ->get();
+
+    // ==========================================================
+
+    // Kirim semua data ke view
+    return view('admin.dashboard', [
+        'jumlahGuru' => $jumlahGuru,
+        'jumlahAkunPiket' => $jumlahAkunPiket,
+        'jumlahJadwal' => $jumlahJadwal,
+        'guruWarning' => $guruWarning,
+        'batasAbsen' => $batasAbsen, // Kirim juga batas absen ke view
+    ]);
+}
 }

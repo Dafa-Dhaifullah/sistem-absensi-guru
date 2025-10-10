@@ -48,7 +48,7 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 // 3. Ubah pesan error agar merujuk ke 'username'
-                'username' => trans('auth.failed'),
+                'username' => 'Username atau password yang Anda masukkan salah.',
             ]);
         }
 

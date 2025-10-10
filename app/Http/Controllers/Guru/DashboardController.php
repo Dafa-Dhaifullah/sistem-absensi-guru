@@ -15,42 +15,52 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $today = now('Asia/Jakarta');
-
+        
         $hariMap = [
             'Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 
             'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 
             'Saturday'=>'Sabtu'
         ];
         $hariIni = $hariMap[$today->format('l')];
-
-        // ==========================================================
-        // ## REVISI DI SINI: Panggil relasi langsung dari $user ##
-        // ==========================================================
-        $jadwalHariIni = $user->jadwalPelajaran() // <-- TIDAK LAGI PAKAI ->dataGuru
+        
+        // Ambil jadwal guru yang login HARI INI
+        $jadwalHariIni = $user->jadwalPelajaran()
             ->where('hari', $hariIni)
             ->orderBy('jam_ke', 'asc')
             ->get();
 
-        // ==========================================================
-        // ## REVISI DI SINI: Gunakan $user->id langsung ##
-        // ==========================================================
-        $laporanHariIni = LaporanHarian::where('user_id', $user->id) // <-- Ganti dari data_guru_id
+        // Cek laporan absensi hari ini
+        $laporanHariIni = LaporanHarian::where('user_id', $user->id)
             ->whereDate('tanggal', $today->toDateString())
             ->first();
-
-        // Ambil data guru piket hari ini (logika ini sudah benar)
+        
+        // ==========================================================
+        // ## TAMBAHAN BARU: Hitung Total Ketidakhadiran Bulan Ini ##
+        // ==========================================================
+        $statusTidakHadir = ['Sakit', 'Izin', 'Alpa'];
+        $totalTidakHadirBulanIni = LaporanHarian::where('user_id', $user->id)
+            ->whereIn('status', $statusTidakHadir)
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->count();
+        $batasAbsen = 4;
+        // ==========================================================
+            
+        // Ambil data guru piket hari ini
         $sesiSekarang = ($today->hour < 12) ? 'Pagi' : 'Siang';
         $piketIds = JadwalPiket::where('hari', $hariIni)
                         ->where('sesi', $sesiSekarang)
                         ->pluck('user_id');
         $guruPiketHariIni = User::whereIn('id', $piketIds)
-                            ->get(); // Dihapus ->with('dataGuru') karena sudah di User
+                            ->get();
 
         return view('guru.dashboard', [
             'jadwalHariIni' => $jadwalHariIni,
             'laporanHariIni' => $laporanHariIni,
             'guruPiketHariIni' => $guruPiketHariIni,
             'sesiSekarang' => $sesiSekarang,
+            'totalTidakHadir' => $totalTidakHadirBulanIni, // <-- Kirim data baru
+            'batasAbsen' => $batasAbsen, // <-- Kirim data baru
         ]);
     }
 }
