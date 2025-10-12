@@ -7,6 +7,12 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+            @if($sedangPiket)
+        <a href="{{ route('piket.dashboard') }}"
+           class="block w-full p-4 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-800 transition duration-150 text-center">
+            <h3 class="text-xl font-bold">Kembali ke Dasbor Pemantauan Piket</h3>
+        </a>
+        @endif
             @if (isset($totalTidakHadir) && $totalTidakHadir >= $batasAbsen)
             <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg shadow-md" role="alert">
                 <h4 class="font-bold">Peringatan Akumulasi Ketidakhadiran</h4>

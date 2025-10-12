@@ -26,10 +26,10 @@
                         <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
                             <li>Download template Excel yang sudah disediakan.</li>
                             <li>Isi data pengguna. Pastikan nama header tidak diubah.</li>
-                            <li>Kolom `nama` dan `username` wajib diisi.</li>
-                            <li>Pastikan `username` tidak ada yang sama.</li>
-                            <li>Kolom `role` harus diisi dengan: `guru`, `piket`, `kepala_sekolah`, atau `admin`.</li>
-                            <li>Password untuk semua akun baru akan otomatis di-set ke **'password123'**.</li>
+                            <li>Kolom <strong>"nama"</strong> dan <strong>"username"</strong> wajib diisi.</li>
+                            <li>Pastikan username tidak ada yang sama.</li>
+                            <li>Kolom <strong>"role"</strong> harus diisi dengan: "guru", "kepala_sekolah", atau "admin".</li>
+                            <li>Password untuk semua akun baru akan otomatis di-set ke <strong>"smkn6garut"</strong>.</li>
                         </ul>
                         <div class="mt-4">
                             <a href="{{ asset('templates/template_pengguna.xlsx') }}" download

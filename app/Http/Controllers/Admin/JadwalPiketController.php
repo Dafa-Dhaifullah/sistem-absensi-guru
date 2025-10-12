@@ -14,6 +14,9 @@ class JadwalPiketController extends Controller
      */
     public function index()
     {
+        // Ambil semua guru dengan role 'guru' untuk pilihan di modal
+        $daftarGuruPiket = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+
         // Ambil semua jadwal, lalu grupkan berdasarkan Hari, lalu Sesi
         $jadwalTersimpan = JadwalPiket::with('user')
                             ->get()
@@ -25,32 +28,24 @@ class JadwalPiketController extends Controller
         $hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
         $sesi = ['Pagi', 'Siang'];
 
-        return view('admin.jadwal_piket.index', compact('jadwalTersimpan', 'hari', 'sesi'));
+        return view('admin.jadwal_piket.index', compact('daftarGuruPiket', 'jadwalTersimpan', 'hari', 'sesi'));
     }
 
     /**
-     * Menampilkan form (checkbox) untuk mengedit satu slot.
+     * Halaman edit tidak lagi digunakan dalam alur ini,
+     * tapi kita biarkan kosong untuk menghindari error jika ada rute lama.
      */
     public function edit($hari, $sesi)
     {
-        // Ambil semua guru piket untuk pilihan checkbox
-        $daftarGuruPiket = User::where('role', 'piket')->orderBy('name', 'asc')->get();
-        
-        // Ambil data guru yang saat ini terpilih untuk slot ini
-        $jadwalSlot = JadwalPiket::where('hari', $hari)->where('sesi', $sesi)->get();
-        
-        // Ambil ID-nya saja untuk memudahkan pengecekan 'checked'
-        $selected_ids = $jadwalSlot->pluck('user_id');
-
-        return view('admin.jadwal_piket.edit', compact('hari', 'sesi', 'daftarGuruPiket', 'selected_ids'));
+        // Redirect ke halaman index utama
+        return redirect()->route('admin.jadwal-piket.index');
     }
 
     /**
-     * Menyimpan perubahan untuk satu slot.
+     * Menyimpan perubahan untuk satu slot dari modal.
      */
     public function update(Request $request, $hari, $sesi)
     {
-        // Validasi bahwa 'user_ids' adalah array, dan semua isinya ada di tabel 'users'
         $request->validate([
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'integer|exists:users,id',
@@ -70,6 +65,6 @@ class JadwalPiketController extends Controller
             }
         }
 
-        return redirect()->route('admin.jadwal-piket.index')->with('success', "Jadwal piket $hari $sesi berhasil diperbarui.");
+        return redirect()->route('admin.jadwal-piket.index')->with('success', "Jadwal piket untuk $hari $sesi berhasil diperbarui.");
     }
 }

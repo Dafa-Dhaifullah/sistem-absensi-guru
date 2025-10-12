@@ -54,7 +54,13 @@ class DashboardController extends Controller
         $guruPiketHariIni = User::whereIn('id', $piketIds)
                             ->get();
 
+        $isPiket = \App\Models\JadwalPiket::where('user_id', $user->id)
+            ->where('hari', $hariIni)
+            ->where('sesi', (now('Asia/Jakarta')->hour < 12 ? 'Pagi' : 'Siang'))
+            ->exists();
+
         return view('guru.dashboard', [
+            'sedangPiket' => $isPiket,
             'jadwalHariIni' => $jadwalHariIni,
             'laporanHariIni' => $laporanHariIni,
             'guruPiketHariIni' => $guruPiketHariIni,

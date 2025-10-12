@@ -31,17 +31,22 @@ class DashboardController extends Controller
         $hariIni = $hariMap[$today->format('l')];
         $sesiSekarang = ($today->hour < 12) ? 'Pagi' : 'Siang';
 
-        $userBolehPiket = JadwalPiket::where('hari', $hariIni)
-                                    ->where('sesi', $sesiSekarang)
-                                    ->where('user_id', Auth::id())
-                                    ->exists();
+        // ==========================================================
+        // ## REVISI UTAMA: Logika Keamanan (Login Lock) ##
+        // ==========================================================
+        // Cek apakah pengguna yang sedang login ada di jadwal piket untuk hari dan sesi ini
+        $isPiket = JadwalPiket::where('hari', $hariIni)
+                                ->where('sesi', $sesiSekarang)
+                                ->where('user_id', Auth::id())
+                                ->exists();
         
-        if (Auth::user()->role != 'admin' && !$userBolehPiket) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return redirect('/login')->withErrors(['username' => 'Akses ditolak. Anda tidak terjadwal piket untuk hari/sesi ini.']);
+        // JIKA PENGGUNA BUKAN PIKET AKTIF (dan bukan admin yang boleh tembus),
+        // alihkan ke dasbor guru biasa dengan pesan error.
+        if (Auth::user()->role != 'admin' && !$isPiket) {
+            return redirect()->route('guru.dashboard')->withErrors('Anda tidak memiliki jadwal piket untuk sesi ini.');
         }
+        // ==========================================================
+
 
         $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $today)
                                   ->whereDate('tanggal_selesai', '>=', $today)
@@ -53,36 +58,35 @@ class DashboardController extends Controller
             if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
         }
 
-        // ==========================================================
-        // ## REVISI LOGIKA PENGAMBILAN DATA ##
-        // ==========================================================
-        
-        // 1. Ambil SEMUA jadwal pelajaran untuk hari ini
-        $semuaJadwalHariIni = JadwalPelajaran::where('hari', $hariIni)
+        // Ambil ID guru yang memiliki jadwal hari ini
+        $jadwalGuruIds = JadwalPelajaran::where('hari', $hariIni)
                             ->whereIn('tipe_blok', $blokValid)
-                            ->with('user') // Eager load relasi user
+                            ->pluck('user_id')
+                            ->unique();
+
+        // Ambil data lengkap guru berdasarkan ID di atas, pastikan rolenya 'guru'
+        $guruWajibHadir = User::whereIn('id', $jadwalGuruIds)
+                            ->where('role', 'guru')
+                            ->orderBy('name', 'asc')
                             ->get();
 
-        // 2. Ambil daftar guru unik dari jadwal tersebut
-        $guruWajibHadir = $semuaJadwalHariIni->pluck('user')
-                            ->where('role', 'guru')
-                            ->unique('id')
-                            ->sortBy('name');
-
-        // 3. Ambil Master Jam Pelajaran untuk hari ini agar mudah dicari
+        // Ambil SEMUA jadwal pelajaran untuk hari ini (untuk mencari jam pertama di view)
+        $semuaJadwalHariIni = JadwalPelajaran::where('hari', $hariIni)
+                            ->whereIn('tipe_blok', $blokValid)
+                            ->get();
+        
+        // Ambil Master Jam Pelajaran untuk hari ini
         $masterJamHariIni = MasterJamPelajaran::where('hari', $hariIni)->get()->keyBy('jam_ke');
         
-        // ==========================================================
-
-
+        // Ambil Laporan Harian yang sudah ada
         $laporanHariIni = LaporanHarian::where('tanggal', $today->toDateString())
                             ->get()
                             ->keyBy('user_id');
 
         return view('piket.dashboard', [
             'guruWajibHadir' => $guruWajibHadir,
-            'semuaJadwalHariIni' => $semuaJadwalHariIni, // <-- Kirim data baru
-            'masterJamHariIni' => $masterJamHariIni, // <-- Kirim data baru
+            'semuaJadwalHariIni' => $semuaJadwalHariIni,
+            'masterJamHariIni' => $masterJamHariIni,
             'hariIni' => $hariIni,
             'tipeMinggu' => $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler',
             'laporanHariIni' => $laporanHariIni

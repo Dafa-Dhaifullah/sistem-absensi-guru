@@ -14,12 +14,51 @@
                         <a href="{{ route('admin.jadwal-pelajaran.create') }}">
                             <x-primary-button>{{ __('Tambah Jadwal Baru') }}</x-primary-button>
                         </a>
-                        <a href="{{ route('admin.jadwal-pelajaran.import.form') }}">
-                            <x-secondary-button>{{ __('Import Jadwal') }}</x-secondary-button>
+                        <a href="{{ route('admin.jadwal-pelajaran.import.form') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                            Import Jadwal
                         </a>
                     </div>
 
                     {{-- Notifikasi akan muncul di sini dari layout --}}
+
+                     <div class="mb-4 p-4 bg-gray-50 rounded-lg border">
+                        <form action="{{ route('admin.jadwal-pelajaran.index') }}" method="GET">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <!-- Kolom Pencarian -->
+                                <div class="md:col-span-2">
+                                    <x-input-label for="search" :value="__('Cari Jadwal (Guru, Kelas, Mapel)')" />
+                                    <x-text-input id="search" class="block mt-1 w-full" type="text" name="search" :value="request('search')" placeholder="Ketik pencarian..." />
+                                </div>
+                                <!-- Filter Guru -->
+                                <div>
+                                    <x-input-label for="user_id" :value="__('Filter Guru')" />
+                                    <select name="user_id" id="user_id" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="">Semua Guru</option>
+                                        @foreach ($daftarGuru as $guru)
+                                            <option value="{{ $guru->id }}" @if(request('user_id') == $guru->id) selected @endif>{{ $guru->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                 <!-- Filter Hari -->
+                                <div>
+                                    <x-input-label for="hari" :value="__('Filter Hari')" />
+                                    <select name="hari" id="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="">Semua Hari</option>
+                                        <option value="Senin" @if(request('hari') == 'Senin') selected @endif>Senin</option>
+                                        <option value="Selasa" @if(request('hari') == 'Selasa') selected @endif>Selasa</option>
+                                        <option value="Rabu" @if(request('hari') == 'Rabu') selected @endif>Rabu</option>
+                                        <option value="Kamis" @if(request('hari') == 'Kamis') selected @endif>Kamis</option>
+                                        <option value="Jumat" @if(request('hari') == 'Jumat') selected @endif>Jumat</option>
+                                        <option value="Sabtu" @if(request('hari') == 'Sabtu') selected @endif>Sabtu</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="flex items-center gap-4 mt-4">
+                                <x-primary-button>Cari</x-primary-button>
+                                <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="text-sm text-gray-500 hover:text-gray-800 ml-2">Reset</a>
+                            </div>
+                        </form>
+                    </div>
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">

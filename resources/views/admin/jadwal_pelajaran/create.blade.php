@@ -14,15 +14,7 @@
                         Keterangan: <span class="text-red-500">*</span> Wajib diisi.
                     </div>
                     
-                    @if ($errors->any())
-                        <div class="mb-4 p-4 bg-red-100 text-red-700 rounded">
-                            <ul class="list-disc list-inside">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+
                     
                     <form action="{{ route('admin.jadwal-pelajaran.store') }}" method="POST">
                         @csrf

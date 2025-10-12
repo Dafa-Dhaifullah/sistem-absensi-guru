@@ -13,6 +13,41 @@
                         <a href="{{ route('admin.pengguna.create') }}">
                             <x-primary-button>{{ __('Tambah Pengguna Baru') }}</x-primary-button>
                         </a>
+                        
+                        <a href="{{ route('admin.pengguna.import.form') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                            Import Pengguna
+                        </a>
+                    </div>
+                    <div>
+                            <a href="{{ route('admin.pengguna.arsip') }}" class="text-sm text-gray-600 hover:text-gray-900 flex items-center">
+                                <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 16.5A1.5 1.5 0 014 15V6.5a1.5 1.5 0 013 0V15a1.5 1.5 0 01-1.5 1.5zM8 15V6.5a1.5 1.5 0 013 0V15a1.5 1.5 0 01-3 0zM13.5 15V6.5a1.5 1.5 0 013 0V15a1.5 1.5 0 01-3 0z" /><path fill-rule="evenodd" d="M1 4a1 1 0 011-1h16a1 1 0 011 1v1a1 1 0 01-1 1H2a1 1 0 01-1-1V4z" clip-rule="evenodd" /></svg>
+                                Buka Arsip
+                            </a>
+                        </div>
+                    <div class="mb-4 p-4 bg-gray-50 rounded-lg border">
+                        <form action="{{ route('admin.pengguna.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <!-- Kolom Pencarian -->
+                            <div class="md:col-span-2">
+                                <x-input-label for="search" :value="__('Cari Pengguna (Nama, Username, atau NIP)')" />
+                                <x-text-input id="search" class="block mt-1 w-full" type="text" name="search" :value="request('search')" placeholder="Ketik pencarian..." />
+                            </div>
+                            <!-- Filter Role -->
+                            <div>
+                                <x-input-label for="role" :value="__('Filter Berdasarkan Role')" />
+                                <select name="role" id="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Semua Role</option>
+                                    <option value="admin" @if(request('role') == 'admin') selected @endif>Admin</option>
+                                    <option value="kepala_sekolah" @if(request('role') == 'kepala_sekolah') selected @endif>Kepala Sekolah</option>
+                                   
+                                    <option value="guru" @if(request('role') == 'guru') selected @endif>Guru</option>
+                                </select>
+                            </div>
+                            <!-- Tombol -->
+                            <div>
+                                <x-primary-button>Cari</x-primary-button>
+                                <a href="{{ route('admin.pengguna.index') }}" class="text-sm text-gray-500 hover:text-gray-800 ml-2">Reset</a>
+                            </div>
+                        </form>
                     </div>
 
                     {{-- Notifikasi akan muncul di sini dari layout --}}

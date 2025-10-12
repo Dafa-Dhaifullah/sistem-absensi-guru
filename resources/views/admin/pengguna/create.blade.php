@@ -16,9 +16,6 @@
                     <form action="{{ route('admin.pengguna.store') }}" method="POST">
                         @csrf
                         
-                        <!-- Input role tersembunyi, ini yang akan dikirim ke controller -->
-                        <input type="hidden" name="role" value="{{ $role }}">
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             <!-- Kolom 1 -->
@@ -34,17 +31,22 @@
                                     <x-input-error :messages="$errors->get('username')" class="mt-2" />
                                 </div>
 
-                                <!-- Dropdown Role (Tampil tapi Disable) -->
+                                <!-- ============================================== -->
+                                <!-- == REVISI DROPDOWN ROLE (SEKARANG AKTIF) == -->
+                                <!-- ============================================== -->
                                 <div>
-                                    <x-input-label for="role_disabled">Hak Akses (Role)</x-input-label>
-                                    <select id="role_disabled" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm bg-gray-100 text-gray-500" disabled>
-                                        <option value="admin" @if($role == 'admin') selected @endif>Admin</option>
-                                        <option value="kepala_sekolah" @if($role == 'kepala_sekolah') selected @endif>Kepala Sekolah</option>
-                                        <option value="piket" @if($role == 'piket') selected @endif>Guru Piket</option>
-                                        <option value="guru" @if($role == 'guru') selected @endif>Guru Umum</option>
+                                    <x-input-label for="role">
+                                        Hak Akses (Role) <span class="text-red-500">*</span>
+                                    </x-input-label>
+                                    <select id="role" name="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        <option value="" disabled {{ old('role', $role) ? '' : 'selected' }}>-- Pilih Hak Akses --</option>
+                                        <option value="admin" {{ old('role', $role) == 'admin' ? 'selected' : '' }}>Admin (TU)</option>
+                                        <option value="kepala_sekolah" {{ old('role', $role) == 'kepala_sekolah' ? 'selected' : '' }}>Kepala Sekolah</option>
+                                        <option value="guru" {{ old('role', $role) == 'guru' ? 'selected' : '' }}>Guru</option>
                                     </select>
-                                    
+                                    <x-input-error :messages="$errors->get('role')" class="mt-2" />
                                 </div>
+                                <!-- ============================================== -->
 
                                 <div>
                                     <x-input-label for="password">Password <span class="text-red-500">*</span></x-input-label>
@@ -80,7 +82,7 @@
 
                         <div class="flex items-center gap-4 mt-8 pt-6 border-t">
                             <x-primary-button>{{ __('Simpan') }}</x-primary-button>
-                            <a href="{{ url()->previous() }}">{{ __('Batal') }}</a>
+                            <a href="{{ route('admin.pengguna.index', ['role' => $role]) }}" class="text-sm text-gray-600 hover:text-gray-900">{{ __('Batal') }}</a>
                         </div>
                     </form>
                 </div>
@@ -88,3 +90,4 @@
         </div>
     </div>
 </x-admin-layout>
+

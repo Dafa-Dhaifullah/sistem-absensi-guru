@@ -23,14 +23,5 @@ class AdminUserSeeder extends Seeder
             'email_verified_at' => now(), // (Opsional, agar terverifikasi)
         ]);
 
-        // (Opsional) Buat 1 user Piket untuk tes
-        User::create([
-            'name' => 'Guru Piket 1',
-            'username' => 'piket', // Ini akan dipakai login
-            'email' => 'piket@sekolah.id',
-            'password' => Hash::make('piket123'),
-            'role' => 'piket',
-            'email_verified_at' => now(),
-        ]);
     }
 }

@@ -21,11 +21,11 @@
                         <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
                             <li>Download template Excel yang sudah disediakan.</li>
                             <li>Isi data sesuai format. Pastikan nama header tidak diubah.</li>
-                            <li>Kolom **nip_guru** isi dengan NIP yang sudah terdaftar di Data Guru.</li>
-                            <li>Untuk **nama_guru** diisi jika nip kosong.</li>
-                            <li>Untuk **jam_ke** yang lebih dari satu jam (misal: jam ke 1 dan 2), tulis dengan koma tanpa spasi: `1,2`.</li>
-                            <li>Nilai **hari** harus: Senin, Selasa, Rabu, Kamis, atau Jumat.</li>
-                            <li>Nilai **tipe_blok** harus: Setiap Minggu, Hanya Minggu 1, atau Hanya Minggu 2.</li>
+                            <li>Kolom <strong>"nip_guru"</strong> isi dengan NIP yang sudah terdaftar di Data Guru.</li>
+                            <li>Untuk <strong>"nama_guru"</strong> diisi jika NIP kosong.</li>
+                            <li>Untuk <strong>"jam_ke"</strong> yang lebih dari satu jam (misal: jam ke 1 dan 2), tulis dengan koma tanpa spasi: `1,2`.</li>
+                            <li>Nilai <strong>"hari"</strong> harus: Senin, Selasa, Rabu, Kamis, atau Jumat.</li>
+                            <li>Nilai <strong>"tipe_blok"</strong> harus: Setiap Minggu, Hanya Minggu 1, atau Hanya Minggu 2.</li>
                         </ul>
                         <div class="mt-4">
                             <a href="{{ asset('templates/template_jadwal.xlsx') }}" download

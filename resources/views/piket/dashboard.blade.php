@@ -10,6 +10,11 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+            <a href="{{ route('guru.dashboard') }}"
+           class="block w-full p-4 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 text-center">
+            <h3 class="text-xl font-bold">Buka Dasbor Absensi Pribadi</h3>
+            <p class="text-indigo-100 text-sm">Klik untuk melakukan absensi mandiri (Scan QR + Selfie).</p>
+        </a>
             {{-- Kartu Petunjuk Tugas (Kolapsibel) --}}
             <div x-data="{ open: true }" class="bg-white p-6 rounded-xl shadow-sm">
                 <button @click="open = !open" class="w-full flex justify-between items-center">

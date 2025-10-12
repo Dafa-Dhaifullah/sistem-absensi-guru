@@ -11,19 +11,37 @@ use Illuminate\Validation\Rules;
 class PenggunaController extends Controller
 {
     // Menampilkan daftar pengguna, bisa difilter berdasarkan role
-    public function index(Request $request)
+     public function index(Request $request)
     {
         $query = User::query();
 
-        // Jika ada filter role di URL (?role=guru)
+        // Filter berdasarkan role (jika ada)
         if ($request->filled('role')) {
             $query->where('role', $request->role);
         }
 
+        // ==========================================================
+        // ## TAMBAHAN BARU: Logika Pencarian ##
+        // ==========================================================
+        if ($request->filled('search')) {
+            $search = $request->search;
+            // Mencari di beberapa kolom sekaligus
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('nip', 'like', "%{$search}%");
+            });
+        }
+        // ==========================================================
+
         $semuaPengguna = $query->orderBy('name', 'asc')->paginate(15);
+
+        // Kirim semua parameter filter ke view untuk pagination
+        $semuaPengguna->appends($request->all());
 
         return view('admin.pengguna.index', compact('semuaPengguna'));
     }
+
 
    /**
      * Menampilkan form tambah pengguna
@@ -68,7 +86,7 @@ class PenggunaController extends Controller
 
 
     // Menampilkan form edit pengguna
-    public function edit(User $pengguna) // Menggunakan Route Model Binding
+    public function edit(User $pengguna) 
     {
         return view('admin.pengguna.edit', compact('pengguna'));
     }
@@ -80,13 +98,21 @@ class PenggunaController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $pengguna->id,
             'email' => 'nullable|string|email|max:255|unique:users,email,' . $pengguna->id,
-            'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id, // <-- Diubah ke 'numeric'
-            'no_wa' => 'nullable|numeric', // <-- Diubah ke 'numeric'
+            'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id, 
+            'no_wa' => 'nullable|numeric', 
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:admin,kepala_sekolah,piket,guru',
         ]);
 
-        $dataUpdate = $request->only(['name', 'username', 'email', 'nip', 'no_wa', 'role']);
+       // 1. Ambil semua data yang valid KECUALI password
+        $dataUpdate = $request->except(['password', 'password_confirmation']);
+        
+        // 2. Cek apakah pengguna mencoba mengubah role-nya sendiri
+        if (auth()->id() == $pengguna->id) {
+            unset($dataUpdate['role']); // Hapus 'role' dari data update jika mengedit diri sendiri
+        }
+        
+        // 3. HANYA update password jika field password diisi
         if ($request->filled('password')) {
             $dataUpdate['password'] = Hash::make($request->password);
         }
@@ -127,8 +153,8 @@ public function importExcel(Request $request)
         if (auth()->id() == $pengguna->id) {
             return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun Anda sendiri.');
         }
-        $pengguna->delete();
-        return redirect()->route('admin.pengguna.index')->with('success', 'Pengguna berhasil dihapus.');
+        $pengguna->delete(); 
+        return redirect()->route('admin.pengguna.index')->with('success', 'Pengguna berhasil diarsipkan.');
     }
 
     // Mereset password
@@ -138,5 +164,26 @@ public function importExcel(Request $request)
         $user->password = Hash::make($defaultPassword);
         $user->save();
         return redirect()->back()->with('success', 'Password untuk ' . $user->name . ' berhasil di-reset.');
+    }
+
+    public function arsip()
+    {
+        $penggunaArsip = User::onlyTrashed()->paginate(15);
+        return view('admin.pengguna.arsip', compact('penggunaArsip'));
+    }
+
+    // Memulihkan pengguna dari arsip
+    public function restore($id)
+    {
+        User::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('admin.pengguna.arsip')->with('success', 'Pengguna berhasil dipulihkan.');
+    }
+
+    // Menghapus pengguna secara permanen dari arsip
+    public function forceDelete($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->forceDelete();
+        return redirect()->route('admin.pengguna.arsip')->with('success', 'Pengguna berhasil dihapus permanen.');
     }
 }

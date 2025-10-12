@@ -12,12 +12,43 @@ use Maatwebsite\Excel\Validators\ValidationException; // <-- Pastikan ini ada
 
 class JadwalPelajaranController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $jadwal = JadwalPelajaran::with('user')->latest()->paginate(15);
-        return view('admin.jadwal_pelajaran.index', ['semuaJadwal' => $jadwal]);
-    }
+        // Ambil daftar guru untuk dropdown filter
+        $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
 
+        $query = JadwalPelajaran::with('user');
+
+        // Logika Pencarian
+        if ($request->filled('search')) {
+            $search = $request->search;
+            // Mencari di kolom 'kelas', 'mata_pelajaran', atau relasi 'user.name'
+            $query->where(function($q) use ($search) {
+                $q->where('kelas', 'like', "%{$search}%")
+                  ->orWhere('mata_pelajaran', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Logika Filter Guru
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        
+        // Logika Filter Hari
+        if ($request->filled('hari')) {
+            $query->where('hari', $request->hari);
+        }
+
+        $semuaJadwal = $query->latest()->paginate(15);
+        
+        // Kirim parameter filter ke view agar pagination tidak hilang
+        $semuaJadwal->appends($request->query());
+
+        return view('admin.jadwal_pelajaran.index', compact('semuaJadwal', 'daftarGuru'));
+    }
     public function create()
     {
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
