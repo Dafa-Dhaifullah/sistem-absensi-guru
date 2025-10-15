@@ -57,7 +57,7 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peran</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. WA</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -67,11 +67,14 @@
                                 @forelse ($semuaPengguna as $user)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->email }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->username }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{{ $user->role }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->no_wa ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex space-x-4 items-center">
+                                                 <div>
+                                                    <a href="{{ route('admin.pengguna.show', $user->id) }}" class="text-gray-600 hover:text-gray-900">Detail</a>
+                                                </div>
                                                 <div>
                                                     <a href="{{ route('admin.pengguna.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                                                 </div>

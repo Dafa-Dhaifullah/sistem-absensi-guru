@@ -7,6 +7,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use App\Imports\PenggunaImport; 
+use Maatwebsite\Excel\Facades\Excel; 
+use Maatwebsite\Excel\Validators\ValidationException;
+use Illuminate\Database\QueryException;
 
 class PenggunaController extends Controller
 {
@@ -20,9 +24,8 @@ class PenggunaController extends Controller
             $query->where('role', $request->role);
         }
 
-        // ==========================================================
-        // ## TAMBAHAN BARU: Logika Pencarian ##
-        // ==========================================================
+       
+        //Logika Pencarian //
         if ($request->filled('search')) {
             $search = $request->search;
             // Mencari di beberapa kolom sekaligus
@@ -40,6 +43,26 @@ class PenggunaController extends Controller
         $semuaPengguna->appends($request->all());
 
         return view('admin.pengguna.index', compact('semuaPengguna'));
+    }
+
+     public function show(User $pengguna)
+    {
+        // Hitung statistik kehadiran pengguna untuk bulan ini
+        $laporanBulanIni = $pengguna->laporanHarian()
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->get();
+        
+        $summary = [
+            'hadir' => $laporanBulanIni->where('status', 'Hadir')->count(),
+            'terlambat' => $laporanBulanIni->where('status_keterlambatan', 'Terlambat')->count(),
+            'sakit' => $laporanBulanIni->where('status', 'Sakit')->count(),
+            'izin' => $laporanBulanIni->where('status', 'Izin')->count(),
+            'alpa' => $laporanBulanIni->where('status', 'Alpa')->count(),
+            'dl' => $laporanBulanIni->where('status', 'DL')->count(),
+        ];
+
+        return view('admin.pengguna.show', compact('pengguna', 'summary'));
     }
 
 
@@ -62,12 +85,15 @@ class PenggunaController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
+            'username' => 'required|string|max:255|unique:users|regex:/^[a-zA-Z0-9\s]+$/',
             'email' => 'nullable|string|email|max:255|unique:users,email',
-            'nip' => 'nullable|numeric|unique:users,nip', // <-- Diubah ke 'numeric'
-            'no_wa' => 'nullable|numeric', // <-- Diubah ke 'numeric'
+            'nip' => 'nullable|numeric|unique:users,nip',
+            'no_wa' => 'nullable|numeric',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,kepala_sekolah,piket,guru',
+            'role' => 'required|in:admin,kepala_sekolah,guru',
+        ], [
+            
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, dan spasi.'
         ]);
 
         User::create([
@@ -79,10 +105,11 @@ class PenggunaController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
-        // Redirect kembali ke halaman index DENGAN FILTER ROLE YANG SAMA
+
         return redirect()->route('admin.pengguna.index', ['role' => $request->role])
                          ->with('success', 'Pengguna baru berhasil ditambahkan.');
     }
+
 
 
     // Menampilkan form edit pengguna
@@ -94,15 +121,18 @@ class PenggunaController extends Controller
     // Mengupdate pengguna
     public function update(Request $request, User $pengguna)
     {
-         $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username,' . $pengguna->id,
+            'username' => 'required|string|max:255|unique:users,username,' . $pengguna->id . '|regex:/^[a-zA-Z0-9\s]+$/',
             'email' => 'nullable|string|email|max:255|unique:users,email,' . $pengguna->id,
-            'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id, 
-            'no_wa' => 'nullable|numeric', 
+            'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id,
+            'no_wa' => 'nullable|numeric',
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,kepala_sekolah,piket,guru',
+            'role' => 'required|in:admin,kepala_sekolah,guru',
+        ], [
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, dan spasi.'
         ]);
+
 
        // 1. Ambil semua data yang valid KECUALI password
         $dataUpdate = $request->except(['password', 'password_confirmation']);
@@ -130,22 +160,46 @@ public function showImportForm()
 
 // Method untuk memproses file Excel
 public function importExcel(Request $request)
-{
-    $request->validate(['file' => 'required|mimes:xlsx,xls']);
+    {
+        $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
-    try {
-        Excel::import(new PenggunaImport, $request->file('file'));
-        return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diimpor!');
-    } catch (ValidationException $e) {
-        $failures = $e->failures();
-        $errorMessages = [];
-        foreach ($failures as $failure) {
-            // Pesan error akan lebih detail: Error di baris X: Pesan Error
-            $errorMessages[] = "Baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+        try {
+            Excel::import(new \App\Imports\PenggunaImport, $request->file('file'));
+            return redirect()->route('admin.pengguna.index')->with('success', 'Data pengguna berhasil diimpor!');
+        
+        } catch (ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+
+            foreach ($failures as $failure) {
+                // Ambil pesan error utama (misal: "Username :value sudah terdaftar")
+                $errorMessage = implode(', ', $failure->errors());
+                
+                // Ambil nama kolom yang error (misal: 'username')
+                $attribute = $failure->attribute();
+                
+                // Ambil nilai yang menyebabkan error dari data baris tersebut
+                $failedValue = $failure->values()[$attribute] ?? ''; 
+                
+                // Ganti placeholder ':value' dengan nilai yang sebenarnya
+                $finalMessage = str_replace(':value', $failedValue, $errorMessage);
+                
+                $errorMessages[] = "Baris " . $failure->row() . ": " . $finalMessage;
+            }
+            // ==========================================================
+            
+            return redirect()->route('admin.pengguna.import.form')->with('import_errors', $errorMessages);
+        
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorCode = $e->errorInfo[1];
+            if ($errorCode == 1062) {
+                return redirect()->route('admin.pengguna.import.form')->with('import_errors', [
+                    'Terjadi kesalahan: Ditemukan data duplikat (Username, NIP, atau Email) di dalam file Excel atau data yang sudah ada di sistem. Silakan periksa kembali file Anda.'
+                ]);
+            }
+            return redirect()->route('admin.pengguna.import.form')->with('import_errors', ['Terjadi kesalahan database yang tidak terduga.']);
         }
-        return redirect()->route('admin.pengguna.import.form')->with('import_errors', $errorMessages);
     }
-}
 
     // Menghapus pengguna
     public function destroy(User $pengguna)

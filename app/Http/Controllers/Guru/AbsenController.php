@@ -8,14 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\LaporanHarian;
-use App\Models\JadwalPelajaran;
 use Carbon\Carbon;
 
 class AbsenController extends Controller
 {
-    /**
-     * Menyimpan data absensi mandiri dari guru.
-     */
     public function store(Request $request)
     {
         // 1. Validasi Input Dasar
@@ -27,37 +23,36 @@ class AbsenController extends Controller
         $user = Auth::user();
         $today = now('Asia/Jakarta');
 
-        // ==========================================================
-        // ## REVISI LOGIKA PENGAMANAN ##
-        // ==========================================================
-        // Cari laporan yang sudah ada untuk hari ini
-        $laporanHariIni = LaporanHarian::where('user_id', $user->id)
+        // Pengecekan apakah guru sudah absen mandiri
+        $sudahAbsenMandiri = LaporanHarian::where('user_id', $user->id)
                                 ->whereDate('tanggal', $today->toDateString())
-                                ->first();
+                                ->where('diabsen_oleh', $user->id)
+                                ->exists();
         
-        // Blokir HANYA JIKA guru ini sudah pernah absen mandiri (status Hadir)
-        if ($laporanHariIni && $laporanHariIni->status == 'Hadir' && $laporanHariIni->diabsen_oleh == $user->id) {
+        if ($sudahAbsenMandiri) {
             return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah melakukan absensi mandiri hari ini.']);
         }
-        // ==========================================================
 
-
-        // 2. Validasi Token QR Code (Tidak berubah)
+        // 2. Validasi Token QR Code
         try {
             $decryptedToken = Crypt::decryptString($request->qr_token);
             $tokenData = json_decode($decryptedToken, true);
             
             $waktuKadaluarsaDenganToleransi = Carbon::createFromTimestamp($tokenData['valid_until'])->addSeconds(15);
+            
             if ($today->isAfter($waktuKadaluarsaDenganToleransi) || $tokenData['secret'] !== config('app.key')) {
                 throw new \Exception('Token tidak valid atau kedaluwarsa.');
             }
-            // (Logika update QrCodeLog sudah dihapus, jadi aman)
 
         } catch (DecryptException | \Exception $e) {
             return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: ' . $e->getMessage()]);
         }
+        
+        // ==========================================================
+        // ## BLOK VALIDASI FOTO SELFIE (EXIF) DIHAPUS DARI SINI ##
+        // ==========================================================
 
-        // 3. Tentukan Status Keterlambatan (Tidak berubah)
+        // 3. Tentukan Status Keterlambatan
         $jadwalPertama = $user->jadwalPelajaran()
             ->where('hari', ['Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'][$today->format('l')])
             ->orderBy('jam_ke', 'asc')
@@ -74,27 +69,22 @@ class AbsenController extends Controller
         $batasWaktuMasuk = Carbon::parse($masterJamPertama->jam_mulai)->addMinutes(15);
         $statusKeterlambatan = ($today->isAfter($batasWaktuMasuk)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // 4. Simpan Foto Selfie (Tidak berubah)
+        // 4. Simpan Foto Selfie
         $pathFoto = $request->file('foto_selfie')->store('public/selfies/' . $today->format('Y-m'));
 
-        // ==========================================================
-        // ## REVISI LOGIKA PENYIMPANAN ##
-        // ==========================================================
-        // 5. Gunakan updateOrCreate untuk menimpa data lama (jika ada)
+        // 5. Simpan Laporan ke Database
         LaporanHarian::updateOrCreate(
-            // Kunci untuk mencari:
             [
                 'tanggal' => $today->toDateString(),
                 'user_id' => $user->id,
             ],
-            // Data yang di-update atau di-insert:
             [
                 'status' => 'Hadir',
                 'jam_absen' => $today->toTimeString(),
                 'foto_selfie_path' => $pathFoto,
                 'status_keterlambatan' => $statusKeterlambatan,
                 'diabsen_oleh' => $user->id,
-                'keterangan_piket' => null // Hapus catatan piket lama
+                'keterangan_piket' => null
             ]
         );
 

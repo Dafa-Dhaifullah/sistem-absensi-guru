@@ -44,11 +44,7 @@
                         Daftar tim guru piket yang bertugas. Klik "Edit Tim" pada setiap slot untuk memilih guru.
                     </p>
 
-                    @if (session('success'))
-                        <div class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-md">
-                            {{ session('success') }}
-                        </div>
-                    @endif
+                   
 
                     <div class="overflow-x-auto border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200">

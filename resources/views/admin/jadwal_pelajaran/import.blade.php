@@ -9,10 +9,15 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-
-                    @if (session('error'))
+                    
+                    @if (session('import_errors'))
                         <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                            {!! session('error') !!}
+                            <p class="font-bold">Gagal mengimpor data. Ditemukan kesalahan berikut:</p>
+                            <ul class="list-disc list-inside text-sm mt-2">
+                                @foreach (session('import_errors') as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
                         </div>
                     @endif
 
@@ -21,11 +26,10 @@
                         <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
                             <li>Download template Excel yang sudah disediakan.</li>
                             <li>Isi data sesuai format. Pastikan nama header tidak diubah.</li>
-                            <li>Kolom <strong>"nip_guru"</strong> isi dengan NIP yang sudah terdaftar di Data Guru.</li>
-                            <li>Untuk <strong>"nama_guru"</strong> diisi jika NIP kosong.</li>
-                            <li>Untuk <strong>"jam_ke"</strong> yang lebih dari satu jam (misal: jam ke 1 dan 2), tulis dengan koma tanpa spasi: `1,2`.</li>
-                            <li>Nilai <strong>"hari"</strong> harus: Senin, Selasa, Rabu, Kamis, atau Jumat.</li>
-                            <li>Nilai <strong>"tipe_blok"</strong> harus: Setiap Minggu, Hanya Minggu 1, atau Hanya Minggu 2.</li>
+                            <li>Kolom **nip_guru** atau **username_guru** wajib diisi. Prioritaskan NIP jika ada.</li>
+                            <li>Untuk **jam_ke** yang lebih dari satu jam (misal: jam ke 1 dan 2), tulis dengan koma tanpa spasi: `1,2`.</li>
+                            <li>Nilai **hari** harus: `Senin`, `Selasa`, `Rabu`, `Kamis`, `Jumat`, atau `Sabtu`.</li>
+                            <li>Nilai **tipe_blok** harus: `Setiap Minggu`, `Hanya Minggu 1`, atau `Hanya Minggu 2`.</li>
                         </ul>
                         <div class="mt-4">
                             <a href="{{ asset('templates/template_jadwal.xlsx') }}" download
@@ -38,7 +42,7 @@
                     <form action="{{ route('admin.jadwal-pelajaran.import.excel') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div>
-                            <x-input-label for="file" :value="__('Pilih File Excel (.xlsx, .xls)')" />
+                            <x-input-label for="file" :value="__('Pilih File Excel (.xlsx, .xls, .csv)')" />
                             <x-text-input id="file" class="block mt-1 w-full border p-2" type="file" name="file" required />
                             <x-input-error :messages="$errors->get('file')" class="mt-2" />
                         </div>

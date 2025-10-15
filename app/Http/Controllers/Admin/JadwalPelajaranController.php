@@ -6,23 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\JadwalPelajaran;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Imports\JadwalPelajaranImport; // <-- Pastikan ini ada
-use Maatwebsite\Excel\Facades\Excel; // <-- Pastikan ini ada
-use Maatwebsite\Excel\Validators\ValidationException; // <-- Pastikan ini ada
+use App\Imports\JadwalPelajaranImport;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use App\Rules\JamKeRange;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
+
 
 class JadwalPelajaranController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil daftar guru untuk dropdown filter
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
-
         $query = JadwalPelajaran::with('user');
-
-        // Logika Pencarian
         if ($request->filled('search')) {
             $search = $request->search;
-            // Mencari di kolom 'kelas', 'mata_pelajaran', atau relasi 'user.name'
             $query->where(function($q) use ($search) {
                 $q->where('kelas', 'like', "%{$search}%")
                   ->orWhere('mata_pelajaran', 'like', "%{$search}%")
@@ -31,31 +30,24 @@ class JadwalPelajaranController extends Controller
                   });
             });
         }
-
-        // Logika Filter Guru
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
-        
-        // Logika Filter Hari
         if ($request->filled('hari')) {
             $query->where('hari', $request->hari);
         }
-
         $semuaJadwal = $query->latest()->paginate(15);
-        
-        // Kirim parameter filter ke view agar pagination tidak hilang
         $semuaJadwal->appends($request->query());
-
         return view('admin.jadwal_pelajaran.index', compact('semuaJadwal', 'daftarGuru'));
     }
+
     public function create()
     {
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
         return view('admin.jadwal_pelajaran.create', ['daftarGuru' => $daftarGuru]);
     }
 
-    public function store(Request $request)
+  public function store(Request $request)
     {
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -68,8 +60,44 @@ class JadwalPelajaranController extends Controller
         ]);
 
         $jamKeArray = $validatedData['jam_ke'];
-        unset($validatedData['jam_ke']);
+        $konflik = [];
+        $tipeBlokBaru = $validatedData['tipe_blok'];
 
+        foreach ($jamKeArray as $jam) {
+            // --- Logika Pengecekan Konflik yang Sudah Diperbaiki ---
+            $query = JadwalPelajaran::where('hari', $validatedData['hari'])->where('jam_ke', $jam);
+
+            // Tambahkan logika filter blok yang tumpang tindih
+            $query->where(function ($q) use ($tipeBlokBaru) {
+                $q->where('tipe_blok', 'Setiap Minggu');
+                if ($tipeBlokBaru === 'Setiap Minggu') {
+                    $q->orWhereIn('tipe_blok', ['Hanya Minggu 1', 'Hanya Minggu 2']);
+                } else {
+                    $q->orWhere('tipe_blok', $tipeBlokBaru);
+                }
+            });
+
+            // Cek apakah ada konflik KELAS atau GURU pada slot waktu yang sama
+            $konflikJadwal = $query->where(function ($q) use ($validatedData) {
+                $q->where('kelas', $validatedData['kelas'])
+                  ->orWhere('user_id', $validatedData['user_id']);
+            })->with('user')->first();
+
+            if ($konflikJadwal) {
+                // Tentukan pesan error berdasarkan jenis konflik
+                if ($konflikJadwal->kelas === $validatedData['kelas']) {
+                    $konflik[] = "Jam ke-{$jam} di kelas {$validatedData['kelas']} sudah diisi oleh {$konflikJadwal->user->name} (Blok: {$konflikJadwal->tipe_blok}).";
+                } else {
+                    $konflik[] = "Guru yang dipilih sudah memiliki jadwal lain di kelas {$konflikJadwal->kelas} pada jam ke-{$jam} (Blok: {$konflikJadwal->tipe_blok}).";
+                }
+            }
+        }
+
+        if (!empty($konflik)) {
+            return redirect()->back()->withInput()->withErrors(array_unique($konflik));
+        }
+        
+        unset($validatedData['jam_ke']);
         foreach ($jamKeArray as $jam) {
             $dataToCreate = $validatedData;
             $dataToCreate['jam_ke'] = $jam; 
@@ -79,9 +107,57 @@ class JadwalPelajaranController extends Controller
         return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil ditambahkan.');
     }
 
-    public function show(JadwalPelajaran $jadwalPelajaran)
+    /**
+     * Mengupdate jadwal pelajaran dengan validasi konflik yang disempurnakan.
+     */
+    public function update(Request $request, JadwalPelajaran $jadwalPelajaran)
     {
-        return redirect()->route('admin.jadwal-pelajaran.index');
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'mata_pelajaran' => 'nullable|string|max:255',
+            'kelas' => 'required|string|max:255',
+            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'jam_ke' => 'required|integer|min:1|max:10',
+            'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
+        ]);
+        
+        $konflik = [];
+        $tipeBlokBaru = $validatedData['tipe_blok'];
+        $jam = $validatedData['jam_ke'];
+
+        $query = JadwalPelajaran::where('id', '!=', $jadwalPelajaran->id)
+            ->where('hari', $validatedData['hari'])
+            ->where('jam_ke', $jam);
+        
+        $query->where(function ($q) use ($tipeBlokBaru) {
+            $q->where('tipe_blok', 'Setiap Minggu');
+            if ($tipeBlokBaru === 'Setiap Minggu') {
+                $q->orWhereIn('tipe_blok', ['Hanya Minggu 1', 'Hanya Minggu 2']);
+            } else {
+                $q->orWhere('tipe_blok', $tipeBlokBaru);
+            }
+        });
+
+        $konflikJadwal = $query->where(function ($q) use ($validatedData) {
+            $q->where('kelas', $validatedData['kelas'])
+              ->orWhere('user_id', $validatedData['user_id']);
+        })->with('user')->first();
+
+        if ($konflikJadwal) {
+            if ($konflikJadwal->kelas === $validatedData['kelas']) {
+                $konflik[] = "Jam ke-{$jam} di kelas {$validatedData['kelas']} sudah diisi oleh {$konflikJadwal->user->name} (Blok: {$konflikJadwal->tipe_blok}).";
+            } else {
+                $konflik[] = "Guru yang dipilih sudah memiliki jadwal lain di kelas {$konflikJadwal->kelas} pada jam ke-{$jam} (Blok: {$konflikJadwal->tipe_blok}).";
+            }
+        }
+        
+        if (!empty($konflik)) {
+            return redirect()->back()->withInput()->withErrors(array_unique($konflik));
+        }
+
+        $jadwalPelajaran->update($validatedData);
+
+        return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diperbarui.');
     }
 
     public function edit(JadwalPelajaran $jadwalPelajaran)
@@ -93,21 +169,9 @@ class JadwalPelajaranController extends Controller
         ]);
     }
 
-    public function update(Request $request, JadwalPelajaran $jadwalPelajaran)
-    {
-        $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'mata_pelajaran' => 'nullable|string|max:255',
-            'kelas' => 'required|string|max:255',
-            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
-            'jam_ke' => 'required|integer|min:1|max:10',
-            'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
-        ]);
+    
 
-        $jadwalPelajaran->update($validatedData);
-
-        return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diperbarui.');
-    }
+    
 
     public function destroy(JadwalPelajaran $jadwalPelajaran)
     {
@@ -115,8 +179,6 @@ class JadwalPelajaranController extends Controller
         return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil dihapus.');
     }
     
-    // --- METHOD UNTUK IMPORT ---
-
     public function showImportForm()
     {
         return view('admin.jadwal_pelajaran.import');
@@ -124,22 +186,109 @@ class JadwalPelajaranController extends Controller
 
     public function importExcel(Request $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
-        try {
-            Excel::import(new JadwalPelajaranImport, $request->file('file'));
-            
-            return redirect()->route('admin.jadwal-pelajaran.index')->with('success', 'Jadwal pelajaran berhasil diimpor!');
+        $rows = Excel::toCollection(new JadwalPelajaranImport, $request->file('file'))->first();
 
-        } catch (ValidationException $e) {
-            $failures = $e->failures();
-            $errorMessages = [];
-            foreach ($failures as $failure) {
-                $errorMessages[] = "Error di baris " . $failure->row() . ": " . implode(', ', $failure->errors());
+        $errors = [];
+        $validatedData = [];
+        $jadwalStaging = collect(); // "Staging area" untuk data yang akan diimpor
+
+        $guruByNip = User::where('role', 'guru')->whereNotNull('nip')->pluck('id', 'nip');
+        $guruByUsername = User::where('role', 'guru')->pluck('id', 'username');
+
+        // === TAHAP 1: VALIDASI FORMAT SETIAP BARIS ===
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 2;
+
+            $validator = Validator::make($row->toArray(), [
+                'nip_guru' => ['nullable', Rule::exists('users', 'nip')->where('role', 'guru')],
+                'username_guru' => ['required_without:nip_guru', Rule::exists('users', 'username')->where('role', 'guru')],
+                'kelas' => 'required|string',
+                'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+                'jam_ke' => ['required', new JamKeRange],
+                'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
+            ]);
+
+            if ($validator->fails()) {
+                foreach ($validator->errors()->all() as $error) {
+                    $errors[] = "Baris {$rowNumber}: {$error}";
+                }
+                continue; // Lanjut ke baris berikutnya jika format sudah salah
             }
-            return redirect()->route('admin.jadwal-pelajaran.import.form')->with('error', 'Gagal mengimpor data. Detail: <br>' . implode('<br>', $errorMessages));
+
+            // Jika format benar, siapkan data untuk validasi konflik
+            $userId = !empty($row['nip_guru']) ? $guruByNip->get($row['nip_guru']) : $guruByUsername->get($row['username_guru']);
+            $jamKeArray = explode(',', strval($row['jam_ke']));
+            foreach ($jamKeArray as $jam) {
+                $validatedData[] = [
+                    'row_number' => $rowNumber,
+                    'user_id' => $userId,
+                    'hari' => $row['hari'],
+                    'jam_ke' => (int) trim($jam),
+                    'kelas' => $row['kelas'],
+                    'mata_pelajaran' => $row['mata_pelajaran'],
+                    'tipe_blok' => $row['tipe_blok'],
+                ];
+            }
         }
+
+        if (!empty($errors)) {
+            return redirect()->back()->with('import_errors', $errors);
+        }
+
+        // === TAHAP 2: VALIDASI KONFLIK LINTAS-BARIS DAN DENGAN DATABASE ===
+        foreach ($validatedData as $data) {
+            // Cek konflik dengan data yang SUDAH ADA di database
+            $konflikDb = JadwalPelajaran::where('hari', $data['hari'])
+                ->where('jam_ke', $data['jam_ke'])
+                ->where(function ($q) use ($data) {
+                    $q->where('kelas', $data['kelas'])
+                      ->orWhere('user_id', $data['user_id']);
+                })->get();
+
+            foreach ($konflikDb as $dbRow) {
+                if ($this->isConflict($data['tipe_blok'], $dbRow->tipe_blok)) {
+                    $errors[] = "Baris {$data['row_number']}: Konflik dengan data di database (Kelas/Guru pada jam yang sama).";
+                }
+            }
+
+            // Cek konflik dengan data LAIN di dalam file Excel ini sendiri
+            $konflikStaging = $jadwalStaging->where('hari', $data['hari'])
+                ->where('jam_ke', $data['jam_ke'])
+                ->filter(function($stg) use ($data) {
+                    return $this->isConflict($data['tipe_blok'], $stg['tipe_blok']) &&
+                           ($stg['kelas'] == $data['kelas'] || $stg['user_id'] == $data['user_id']);
+                });
+            
+            if ($konflikStaging->isNotEmpty()) {
+                 $errors[] = "Baris {$data['row_number']}: Konflik dengan baris lain di dalam file Excel yang sama.";
+            }
+
+            $jadwalStaging->push($data);
+        }
+
+        if (!empty($errors)) {
+            return redirect()->back()->with('import_errors', array_unique($errors));
+        }
+
+        // === TAHAP 3: SIMPAN DATA JIKA TIDAK ADA ERROR SAMA SEKALI ===
+        foreach($validatedData as $data) {
+            JadwalPelajaran::create([
+                'user_id' => $data['user_id'],
+                'hari' => $data['hari'],
+                'jam_ke' => $data['jam_ke'],
+                'kelas' => $data['kelas'],
+                'mata_pelajaran' => $data['mata_pelajaran'],
+                'tipe_blok' => $data['tipe_blok'],
+            ]);
+        }
+
+        return redirect()->route('admin.jadwal-pelajaran.index')->with('success', count($validatedData) . ' data jadwal berhasil diimpor!');
+    }
+    
+    private function isConflict($newBlock, $existingBlock)
+    {
+        return $newBlock === 'Setiap Minggu' || $existingBlock === 'Setiap Minggu' || $newBlock === $existingBlock;
     }
 }

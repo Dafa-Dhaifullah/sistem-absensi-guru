@@ -17,13 +17,20 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            // REVISI: Tambahkan validasi username, unik tapi abaikan user saat ini
-            'username' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
-            // REVISI: Email sekarang opsional
+            'username' => ['required', 'string', 'max:255', Rule::unique(User::class)->ignore($this->user()->id), 'regex:/^[a-zA-Z0-9\s]+$/'],
             'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
-            // REVISI: Tambahkan validasi NIP dan No. WA
-            'nip' => ['nullable', 'string', 'max:50', Rule::unique(User::class)->ignore($this->user()->id)],
-            'no_wa' => ['nullable', 'string', 'max:20'],
+            'nip' => ['nullable', 'numeric', Rule::unique(User::class)->ignore($this->user()->id)],
+            'no_wa' => ['nullable', 'numeric'],
+        ];
+    }
+
+    /**
+     * Tambahkan pesan error custom.
+     */
+    public function messages(): array
+    {
+        return [
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, dan spasi.',
         ];
     }
 }
