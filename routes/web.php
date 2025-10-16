@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\HariLiburController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\OverrideLogController;
+use App\Http\Controllers\Admin\QrCodeGeneratorController;
 
 // Controller Publik & QR Code
 use App\Http\Controllers\DisplayController;
@@ -103,6 +104,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Rute Manajemen Sistem
     Route::resource('kalender-blok', KalenderBlokController::class);
     Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
+
+    // Rute untuk halaman generator QR Code
+Route::get('qrcode-generator', [QrCodeGeneratorController::class, 'index'])->name('qrcode.generator.index');
+Route::get('qrcode-generator/print', [QrCodeGeneratorController::class, 'print'])->name('qrcode.generator.print');
 
 });
 

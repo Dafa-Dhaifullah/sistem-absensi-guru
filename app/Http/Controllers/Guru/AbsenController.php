@@ -6,88 +6,67 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\LaporanHarian;
+use App\Models\JadwalPelajaran;
+use App\Models\MasterJamPelajaran;
 use Carbon\Carbon;
 
 class AbsenController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validasi Input Dasar
-        $request->validate([
+        // Validasi input sekarang menerima array
+        $validated = $request->validate([
             'qr_token' => 'required|string',
             'foto_selfie' => 'required|image|max:2048',
+            'jadwal_ids' => 'required|array',
+            'jadwal_ids.*' => 'exists:jadwal_pelajaran,id',
         ]);
 
         $user = Auth::user();
         $today = now('Asia/Jakarta');
-
-        // Pengecekan apakah guru sudah absen mandiri
-        $sudahAbsenMandiri = LaporanHarian::where('user_id', $user->id)
-                                ->whereDate('tanggal', $today->toDateString())
-                                ->where('diabsen_oleh', $user->id)
-                                ->exists();
         
-        if ($sudahAbsenMandiri) {
-            return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah melakukan absensi mandiri hari ini.']);
-        }
+        // Ambil semua objek jadwal dari array ID yang diterima
+        $jadwals = JadwalPelajaran::find($validated['jadwal_ids']);
+        $jadwalPertama = $jadwals->first();
 
-        // 2. Validasi Token QR Code
-        try {
-            $decryptedToken = Crypt::decryptString($request->qr_token);
-            $tokenData = json_decode($decryptedToken, true);
-            
-            $waktuKadaluarsaDenganToleransi = Carbon::createFromTimestamp($tokenData['valid_until'])->addSeconds(15);
-            
-            if ($today->isAfter($waktuKadaluarsaDenganToleransi) || $tokenData['secret'] !== config('app.key')) {
-                throw new \Exception('Token tidak valid atau kedaluwarsa.');
+        // --- Validasi Keamanan & Logika ---
+        foreach ($jadwals as $jadwal) {
+            if ($jadwal->user_id != $user->id) {
+                return redirect()->back()->withErrors(['foto_selfie' => 'Jadwal tidak sesuai dengan akun Anda.']);
             }
-
-        } catch (DecryptException | \Exception $e) {
-            return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: ' . $e->getMessage()]);
+            if (LaporanHarian::where('jadwal_pelajaran_id', $jadwal->id)->exists()) {
+                return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah absen untuk salah satu jam di blok ini.']);
+            }
         }
         
-        // ==========================================================
-        // ## BLOK VALIDASI FOTO SELFIE (EXIF) DIHAPUS DARI SINI ##
-        // ==========================================================
-
-        // 3. Tentukan Status Keterlambatan
-        $jadwalPertama = $user->jadwalPelajaran()
-            ->where('hari', ['Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'][$today->format('l')])
-            ->orderBy('jam_ke', 'asc')
-            ->first();
-
-        if (!$jadwalPertama) {
-            return redirect()->back()->withErrors(['foto_selfie' => 'Anda tidak memiliki jadwal mengajar hari ini.']);
+        // Validasi QR Code (cocokkan dengan kelas dari jadwal pertama)
+        if (Crypt::decryptString($validated['qr_token']) !== $jadwalPertama->kelas) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'QR Code tidak sesuai dengan kelas yang dijadwalkan.']);
         }
 
-        $masterJamPertama = \App\Models\MasterJamPelajaran::where('hari', $jadwalPertama->hari)
-            ->where('jam_ke', $jadwalPertama->jam_ke)
-            ->first();
-        
-        $batasWaktuMasuk = Carbon::parse($masterJamPertama->jam_mulai)->addMinutes(15);
-        $statusKeterlambatan = ($today->isAfter($batasWaktuMasuk)) ? 'Terlambat' : 'Tepat Waktu';
+        // --- Tentukan Status Keterlambatan (berdasarkan jam pertama) ---
+        $masterJamPertama = MasterJamPelajaran::where('hari', $jadwalPertama->hari)->where('jam_ke', $jadwalPertama->jam_ke)->first();
+        $batasToleransi = Carbon::parse($today->toDateString() . ' ' . $masterJamPertama->jam_mulai)->addMinutes(15);
+        $statusKeterlambatan = ($today->isAfter($batasToleransi)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // 4. Simpan Foto Selfie
+        // --- Simpan Foto dan Laporan ---
         $pathFoto = $request->file('foto_selfie')->store('public/selfies/' . $today->format('Y-m'));
-
-        // 5. Simpan Laporan ke Database
-        LaporanHarian::updateOrCreate(
-            [
-                'tanggal' => $today->toDateString(),
+        
+        // LOOPING untuk menyimpan laporan untuk SETIAP jam di blok
+        foreach ($jadwals as $jadwal) {
+            LaporanHarian::create([
+                'jadwal_pelajaran_id' => $jadwal->id,
                 'user_id' => $user->id,
-            ],
-            [
+                'tanggal' => $today->toDateString(),
                 'status' => 'Hadir',
                 'jam_absen' => $today->toTimeString(),
                 'foto_selfie_path' => $pathFoto,
                 'status_keterlambatan' => $statusKeterlambatan,
                 'diabsen_oleh' => $user->id,
-                'keterangan_piket' => null
-            ]
-        );
+            ]);
+        }
 
-        return redirect()->route('guru.dashboard')->with('success', 'Absensi berhasil! Status Anda telah diperbarui menjadi Hadir.');
+        return redirect()->route('guru.dashboard')->with('success', 'Absensi untuk kelas ' . $jadwalPertama->kelas . ' berhasil!');
     }
 }
