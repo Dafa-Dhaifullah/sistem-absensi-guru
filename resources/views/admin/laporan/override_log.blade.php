@@ -1,7 +1,7 @@
 <x-admin-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Laporan Log Aktivitas Piket') }}
+            {{ __('Log Aktivitas Piket (Override)') }}
         </h2>
     </x-slot>
 
@@ -19,6 +19,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Waktu Aksi</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi Oleh (Piket)</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Untuk Guru</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Detail Sesi</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Perubahan Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
                                 </tr>
@@ -27,10 +28,18 @@
                                 @forelse($logs as $log)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $log->created_at->locale('id_ID')->isoFormat('dddd, D MMM YYYY - HH:mm') }}
+                                        {{ $log->created_at->isoFormat('dddd, D MMM YYYY - HH:mm') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $log->piket->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->guru->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        @if($log->jadwalPelajaran)
+                                            Jam ke-{{ $log->jadwalPelajaran->jam_ke }}
+                                            ({{ $log->jadwalPelajaran->kelas }})
+                                        @else
+                                            (Jadwal terhapus)
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <span class="font-semibold">{{ $log->status_lama }}</span> &rarr; <span class="font-bold text-blue-600">{{ $log->status_baru }}</span>
                                     </td>
@@ -38,7 +47,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada aktivitas override yang tercatat.</td>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada aktivitas override yang tercatat.</td>
                                 </tr>
                                 @endforelse
                             </tbody>

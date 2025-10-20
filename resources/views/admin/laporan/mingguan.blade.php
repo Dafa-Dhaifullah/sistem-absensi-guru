@@ -30,11 +30,13 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
                             Menampilkan Laporan: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
                         </h3>
-                        <a href="{{ route('admin.laporan.export.mingguan', ['tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                        <a href="{{ route('admin.laporan.export.mingguan', ['tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}"
+                           class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
                         </a>
                     </div>
@@ -42,7 +44,6 @@
                     <div class="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs">
                         <span class="font-semibold">Keterangan:</span>
                         <span class="inline-flex items-center"><div class="w-3 h-3 rounded-full bg-green-100 border mr-2"></div> Hadir</span>
-                        <span class="inline-flex items-center"><div class="w-3 h-3 rounded-full bg-orange-100 border mr-2"></div> Terlambat</span>
                         <span class="inline-flex items-center"><div class="w-3 h-3 rounded-full bg-yellow-100 border mr-2"></div> Sakit</span>
                         <span class="inline-flex items-center"><div class="w-3 h-3 rounded-full bg-blue-100 border mr-2"></div> Izin</span>
                         <span class="inline-flex items-center"><div class="w-3 h-3 rounded-full bg-red-100 border mr-2"></div> Alpa</span>
@@ -54,65 +55,66 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Guru</th>
+                                    
                                     @foreach ($tanggalRange as $tanggal)
                                         <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r">
                                             {{ $tanggal->isoFormat('ddd, D') }}
                                         </th>
                                     @endforeach
-                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Total Absen</th>
+                                    
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-green-50">H</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-yellow-50">S</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-blue-50">I</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-red-50">A</th>
+                                    <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase bg-purple-50">DL</th>
+__
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($semuaGuru as $guru)
+                                
+                                @php
+                                    $summaryKeys = array_keys($summaryTotal);
+                                @endphp
+                                @forelse ($laporanHarianTeringkas as $laporan)
                                     <tr>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $guru->name }}</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $laporan['name'] }}</td>
+
                                         @foreach ($tanggalRange as $tanggal)
                                             @php
-                                                $laporan = $guru->laporanHarian->firstWhere('tanggal', $tanggal->toDateString());
-                                                $status = $laporan ? $laporan->status : '';
-                                                $statusTampilan = '-';
-                                                
-                                                // REVISI LOGIKA PEWARNAAN & TAMPILAN
+                                                $status = $laporan['dataHarian'][$tanggal->toDateString()];
                                                 $bgColor = 'bg-white';
-                                                if ($status) {
-                                                    if ($status == 'Hadir') {
-                                                        if ($laporan->status_keterlambatan == 'Terlambat') {
-                                                            $statusTampilan = 'H';
-                                                            $bgColor = 'bg-orange-100'; // Oranye untuk terlambat
-                                                        } else {
-                                                            $statusTampilan = 'H';
-                                                            $bgColor = 'bg-green-100'; // Hijau untuk hadir tepat waktu
-                                                        }
-                                                    } elseif ($status == 'DL') {
-                                                        $statusTampilan = 'DL';
-                                                        $bgColor = 'bg-purple-100';
-                                                    } else {
-                                                        $statusTampilan = substr($status, 0, 1);
-                                                        if ($status == 'Sakit') $bgColor = 'bg-yellow-100';
-                                                        if ($status == 'Izin') $bgColor = 'bg-blue-100';
-                                                        if ($status == 'Alpa') $bgColor = 'bg-red-100 font-bold';
-                                                    }
-                                                }
+                                                if ($status == 'H') $bgColor = 'bg-green-100';
+                                                if ($status == 'S') $bgColor = 'bg-yellow-100';
+                                                if ($status == 'I') $bgColor = 'bg-blue-100';
+                                                if ($status == 'A') $bgColor = 'bg-red-100 font-bold';
+                                                if ($status == 'DL') $bgColor = 'bg-purple-100';
                                             @endphp
                                             <td class="px-2 py-3 text-center text-xs font-medium border-r {{ $bgColor }}">
-                                                {{ $statusTampilan }}
+                                                {{ $status }}
                                             </td>
                                         @endforeach
                                         
-                                        <td class="px-2 py-3 text-center text-sm font-medium bg-gray-50">
-                                            H: <span class="font-bold text-green-600">{{ $guru->laporanHarian->where('status', 'Hadir')->count() }}</span> | 
-                                            S: <span class="font-bold text-yellow-600">{{ $guru->laporanHarian->where('status', 'Sakit')->count() }}</span> | 
-                                            I: <span class="font-bold text-blue-600">{{ $guru->laporanHarian->where('status', 'Izin')->count() }}</span> | 
-                                            A: <span class="font-bold text-red-600">{{ $guru->laporanHarian->where('status', 'Alpa')->count() }}</span> |
-                                            DL: <span class="font-bold text-purple-600">{{ $guru->laporanHarian->where('status', 'DL')->count() }}</span>
-                                        </td>
+                                        @php
+                                            $currentKey = $summaryKeys[$loop->index];
+                                            $summary = $summaryTotal[$currentKey];
+                                        @endphp
+                                        <td class="px-2 py-3 text-center text-xs font-medium border-r bg-green-50">{{ $summary['totalHadir'] }}</td>
+                                        <td class="px-2 py-3 text-center text-xs font-medium border-r bg-yellow-50">{{ $summary['totalSakit'] }}</td>
+                                        <td class_id"px-2 py-3 text-center text-xs font-medium border-r bg-blue-50">{{ $summary['totalIzin'] }}</td>
+                                        <td class="px-2 py-3 text-center text-xs font-medium border-r bg-red-50">{{ $summary['totalAlpa'] }}</td>
+                                        <td class="px-2 py-3 text-center text-xs font-medium bg-purple-50">{{ $summary['totalDL'] }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="{{ count($tanggalRange) + 2 }}" class="px-6 py-4 text-center text-gray-500">Belum ada data guru.</td></tr>
+                                    <tr>
+                                        <td colspan="{{ count($tanggalRange) + 6 }}" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            Belum ada data guru.
+                                        </td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>

@@ -126,6 +126,8 @@ Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name(
     
     // Rute Export Excel
     Route::get('laporan/export/bulanan', [LaporanController::class, 'exportBulanan'])->name('laporan.export.bulanan');
+    Route::get('laporan/export/bulanan-sesi', [LaporanController::class, 'exportBulananSesi'])->name('laporan.export.bulanan-sesi');
+    Route::get('laporan/bulanan-sesi', [LaporanController::class, 'bulananSesi'])->name('laporan.bulanan.sesi');
     Route::get('laporan/export/mingguan', [LaporanController::class, 'exportMingguan'])->name('laporan.export.mingguan');
     Route::get('laporan/export/individu', [LaporanController::class, 'exportIndividu'])->name('laporan.export.individu');
     Route::get('laporan/export/arsip', [LaporanController::class, 'exportArsip'])->name('laporan.export.arsip');

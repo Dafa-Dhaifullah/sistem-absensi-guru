@@ -1,7 +1,8 @@
 <x-admin-layout>
-      <x-slot name="headerScripts">
+    <x-slot name="headerScripts">
         <meta http-equiv="refresh" content="60">
     </x-slot>
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Jadwal Pelajaran Real-time') }}
@@ -23,6 +24,8 @@
                                 ({{ Carbon\Carbon::parse($jamKeSekarang->jam_mulai)->format('H:i') }} - {{ Carbon\Carbon::parse($jamKeSekarang->jam_selesai)->format('H:i') }})
                                 | Blok: <strong>{{ $tipeMinggu }}</strong>
                             </p>
+                        @elseif ($tipeMinggu == 'Hari Libur')
+                             <p class="text-gray-700 font-semibold">Hari Ini Libur (Tidak ada jadwal pelajaran).</p>
                         @else
                             <p class="text-gray-700 font-semibold">Di luar jam pelajaran.</p>
                         @endif
@@ -41,28 +44,31 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($jadwalSekarang as $jadwal)
+                                    @php
+                                        // Cari laporan yang sesuai dengan ID jadwal ini
+                                        $laporan = $laporanHariIni->get($jadwal->id);
+                                        $statusText = 'Belum Absen';
+                                        $statusColor = 'bg-gray-100 text-gray-800';
+                                        
+                                        if ($laporan) {
+                                            if ($laporan->status == 'Hadir') {
+                                                $statusText = $laporan->status_keterlambatan == 'Terlambat' ? 'Terlambat' : 'Hadir';
+                                                $statusColor = $laporan->status_keterlambatan == 'Terlambat' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800';
+                                            } else {
+                                                $statusText = $laporan->status;
+                                                if ($laporan->status == 'Sakit') $statusColor = 'bg-yellow-100 text-yellow-800';
+                                                if ($laporan->status == 'Izin') $statusColor = 'bg-blue-100 text-blue-800';
+                                                if ($laporan->status == 'Alpa') $statusColor = 'bg-red-100 text-red-800';
+                                                if ($laporan->status == 'DL') $statusColor = 'bg-purple-100 text-purple-800';
+                                            }
+                                        }
+                                    @endphp
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $jadwal->kelas }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $jadwal->user->name ?? 'N/A' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                            @php
-                                                $laporan = $laporanHariIni->get($jadwal->user_id);
-                                                $status = $laporan ? $laporan->status : 'Belum Absen';
-                                                
-                                                if ($laporan && $laporan->status == 'Hadir' && $laporan->status_keterlambatan == 'Terlambat') {
-                                                    $status = 'Terlambat';
-                                                }
-                                                
-                                                $statusColor = 'bg-gray-100 text-gray-800';
-                                                if ($status == 'Hadir') $statusColor = 'bg-green-100 text-green-800';
-                                                if ($status == 'Terlambat') $statusColor = 'bg-orange-100 text-orange-800';
-                                                if ($status == 'Sakit') $statusColor = 'bg-yellow-100 text-yellow-800';
-                                                if ($status == 'Izin') $statusColor = 'bg-blue-100 text-blue-800';
-                                                if ($status == 'Alpa') $statusColor = 'bg-red-100 text-red-800';
-                                                if ($status == 'DL') $statusColor = 'bg-purple-100 text-purple-800';
-                                            @endphp
                                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColor }}">
-                                                {{ $status }}
+                                                {{ $statusText }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic">
@@ -79,7 +85,15 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Tidak ada jadwal mengajar pada jam ini.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                                            @if($jamKeSekarang)
+                                                Tidak ada jadwal mengajar pada jam ini.
+                                            @else
+                                                Tidak ada jadwal (di luar jam pelajaran atau hari libur).
+                                            @endif
+                                        </td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>

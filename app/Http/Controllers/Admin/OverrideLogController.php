@@ -10,7 +10,11 @@ class OverrideLogController extends Controller
 {
     public function index()
     {
-        $logs = OverrideLog::with(['piket', 'guru'])->latest()->paginate(20);
+        // Ambil relasi piket, guru, dan jadwal pelajaran
+        $logs = OverrideLog::with(['piket', 'guru', 'jadwalPelajaran'])
+                            ->latest()
+                            ->paginate(20);
+                            
         return view('admin.laporan.override_log', compact('logs'));
     }
 }

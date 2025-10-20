@@ -4,7 +4,6 @@ namespace App\Exports;
 
 use App\Models\User;
 use App\Models\HariLibur;
-use App\Models\JadwalPelajaran;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -28,7 +27,6 @@ class LaporanBulananExport implements WithEvents
         $this->namaBulan = \Carbon\Carbon::create()->month($bulan)->locale('id_ID')->isoFormat('MMMM');
         $this->daysInMonth = \Carbon\Carbon::createFromDate($tahun, $bulan)->daysInMonth;
 
-        // REVISI: Menggunakan model User dan relasi yang benar
         $this->semuaGuru = User::where('role', 'guru')
             ->with(['laporanHarian' => function ($query) {
                 $query->whereYear('tanggal', $this->tahun)->whereMonth('tanggal', $this->bulan);
@@ -44,17 +42,17 @@ class LaporanBulananExport implements WithEvents
         
         foreach($this->semuaGuru as $guru) {
             $jadwalHariGuru = $guru->jadwalPelajaran->pluck('hari')->unique();
-            $jumlahHariKerja = 0;
+            $hariKerjaList = collect(); 
 
             for ($i = 1; $i <= $this->daysInMonth; $i++) {
                 $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i);
-                $namaHari = ['Sunday'=>'Minggu', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'][$tanggal->format('l')];
-
+                $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+                
                 if ($jadwalHariGuru->contains($namaHari) && !$hariLibur->contains($tanggal->toDateString())) {
-                    $jumlahHariKerja++;
+                    $hariKerjaList->push($tanggal->toDateString());
                 }
             }
-            $this->hariKerjaEfektif[$guru->id] = $jumlahHariKerja;
+            $this->hariKerjaEfektif[$guru->id] = $hariKerjaList;
         }
     }
 
@@ -64,7 +62,7 @@ class LaporanBulananExport implements WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                // --- 1. HEADER KOMPLEKS (Struktur Anda dipertahankan) ---
+                // --- 1. HEADER KOMPLEKS ---
                 $sheet->mergeCells('C1:AF1')->setCellValue('C1', 'KETIDAKHADIRAN GURU');
                 $sheet->mergeCells('C2:AF2')->setCellValue('C2', 'BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
                 $sheet->mergeCells('C3:AF3')->setCellValue('C3', 'TANGGAL');
@@ -83,78 +81,63 @@ class LaporanBulananExport implements WithEvents
                 $row = 6;
                 foreach ($this->semuaGuru as $index => $guru) {
                     $sheet->setCellValue('A' . $row, $index + 1);
-                    $sheet->setCellValue('B' . $row, $guru->name); // REVISI: $guru->name
+                    $sheet->setCellValue('B' . $row, $guru->name);
+
+                    $totalHadir = 0; $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
 
                     for ($i = 1; $i <= $this->daysInMonth; $i++) {
                         $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
-                        $tanggalCek = sprintf('%s-%s-%s', $this->tahun, str_pad($this->bulan, 2, '0', STR_PAD_LEFT), str_pad($i, 2, '0', STR_PAD_LEFT));
-                        $laporan = $guru->laporanHarian->firstWhere('tanggal', $tanggalCek);
+                        $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i);
+                        $tanggalCek = $tanggal->toDateString();
                         
-                        $status = $laporan ? $laporan->status : '';
-                        
-                        $cellValue = '';
-                        // ==========================================================
-                        // ## REVISI 1: Logika Hadir Terlambat ##
-                        // ==========================================================
-                        if ($status == 'Hadir') {
-                            $cellValue = 'H';
-                            if ($laporan->status_keterlambatan == 'Terlambat') {
-                                $sheet->getStyle($col . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFD700'); // Oranye
+                        $cellValue = '-'; // Default untuk non-hari kerja
+                        $isHariKerja = isset($this->hariKerjaEfektif[$guru->id]) && $this->hariKerjaEfektif[$guru->id]->contains($tanggalCek);
+
+                        if ($isHariKerja) {
+                            $laporanPerHari = $guru->laporanHarian->where('tanggal', $tanggalCek);
+                            
+                            if ($laporanPerHari->isNotEmpty()) {
+                                if ($laporanPerHari->contains('status', 'Hadir')) {
+                                    $cellValue = 'H'; $totalHadir++;
+                                } elseif ($laporanPerHari->contains('status', 'DL')) {
+                                    $cellValue = 'DL'; $totalDL++;
+                                } elseif ($laporanPerHari->contains('status', 'Sakit')) {
+                                    $cellValue = 'S'; $totalSakit++;
+                                } elseif ($laporanPerHari->contains('status', 'Izin')) {
+                                    $cellValue = 'I'; $totalIzin++;
+                                } else {
+                                    $cellValue = 'A'; $totalAlpa++;
+                                }
+                            } else {
+                                // ==========================================================
+                                // ## REVISI LOGIKA ALPA: Hanya tandai Alpa jika hari sudah lewat ##
+                                // ==========================================================
+                                if ($tanggal->isPast()) {
+                                    $cellValue = 'A'; 
+                                    $totalAlpa++;
+                                } else {
+                                    $cellValue = '-'; // Jika hari kerja tapi di masa depan
+                                }
+                                // ==========================================================
                             }
-                        } 
-                        elseif ($status == 'Sakit') $cellValue = 'S';
-                        elseif ($status == 'Izin') $cellValue = 'I';
-                        elseif ($status == 'Alpa') $cellValue = 'A';
-                        elseif ($status == 'DL') $cellValue = 'DL';
-                        
+                        }
                         $sheet->setCellValue($col . $row, $cellValue);
                     }
-                    $row++;
-                }
-
-                // --- 3. HEADER & KOLOM SUMMARY ---
-                $lastDataColIndex = $this->daysInMonth + 2;
-                
-                $sCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 1);
-                $iCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 2);
-                $aCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 3);
-                $dlCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 4);
-                $jumlahCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 5);
-                $persenTidakHadirCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 6);
-                $persenHadirCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 7);
-                
-                $sheet->mergeCells("{$sCol}1:{$dlCol}3")->setCellValue("{$sCol}1", 'KETERANGAN');
-                $sheet->mergeCells("{$jumlahCol}1:{$persenHadirCol}3")->setCellValue("{$jumlahCol}1", 'PERSENTASE');
-
-                $sheet->setCellValue("{$sCol}4", 'S');
-                $sheet->setCellValue("{$iCol}4", 'I');
-                $sheet->setCellValue("{$aCol}4", 'A');
-                $sheet->setCellValue("{$dlCol}4", 'DL');
-                $sheet->setCellValue("{$jumlahCol}4", 'JML');
-                $sheet->setCellValue("{$persenTidakHadirCol}4", '% Tdk Hadir');
-                $sheet->setCellValue("{$persenHadirCol}4", '% Hadir');
-
-                $sheet->mergeCells("{$sCol}4:{$sCol}5");
-                $sheet->mergeCells("{$iCol}4:{$iCol}5");
-                $sheet->mergeCells("{$aCol}4:{$aCol}5");
-                $sheet->mergeCells("{$dlCol}4:{$dlCol}5");
-                $sheet->mergeCells("{$jumlahCol}4:{$jumlahCol}5");
-                $sheet->mergeCells("{$persenTidakHadirCol}4:{$persenTidakHadirCol}5");
-                $sheet->mergeCells("{$persenHadirCol}4:{$persenHadirCol}5");
-
-                // --- 4. MENGISI DATA SUMMARY (PER BARIS) ---
-                $row = 6;
-                foreach ($this->semuaGuru as $guru) {
-                    $totalHadir = $guru->laporanHarian->where('status', 'Hadir')->count();
-                    $totalSakit = $guru->laporanHarian->where('status', 'Sakit')->count();
-                    $totalIzin = $guru->laporanHarian->where('status', 'Izin')->count();
-                    $totalAlpa = $guru->laporanHarian->where('status', 'Alpa')->count();
-                    $totalDL = $guru->laporanHarian->where('status', 'DL')->count();
-                    $totalTidakHadir = $totalSakit + $totalIzin + $totalAlpa;
                     
-                    $hariKerja = $this->hariKerjaEfektif[$guru->id] ?? 0;
-                    $persentaseTidakHadir = ($hariKerja > 0) ? ($totalTidakHadir / $hariKerja) * 100 : 0;
-                    $persentaseHadir = ($hariKerja > 0) ? ($totalHadir / $hariKerja) * 100 : 0;
+                    // --- 3. MENGISI DATA SUMMARY (PER BARIS) ---
+                    $lastDataColIndex = $this->daysInMonth + 2;
+                    $sCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 1);
+                    $iCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 2);
+                    $aCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 3);
+                    $dlCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 4);
+                    $jumlahCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 5);
+                    $persenTidakHadirCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 6);
+                    $persenHadirCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColIndex + 7);
+
+                    $totalTidakHadir = $totalSakit + $totalIzin + $totalAlpa;
+                    $hariKerjaCount = isset($this->hariKerjaEfektif[$guru->id]) ? $this->hariKerjaEfektif[$guru->id]->count() : 0;
+                    $persentaseTidakHadir = ($hariKerjaCount > 0) ? ($totalTidakHadir / $hariKerjaCount) * 100 : 0;
+                    $persentaseHadir = ($hariKerjaCount > 0) ? ($totalHadir / $hariKerjaCount) * 100 : 0;
                     
                     $sheet->setCellValue("{$sCol}{$row}", $totalSakit ?: '0');
                     $sheet->setCellValue("{$iCol}{$row}", $totalIzin ?: '0');
@@ -163,12 +146,31 @@ class LaporanBulananExport implements WithEvents
                     $sheet->setCellValue("{$jumlahCol}{$row}", $totalTidakHadir ?: '0');
                     $sheet->setCellValue("{$persenTidakHadirCol}{$row}", round($persentaseTidakHadir) . '%');
                     $sheet->setCellValue("{$persenHadirCol}{$row}", round($persentaseHadir) . '%');
+                    
                     $row++;
                 }
+
+                // --- 4. HEADER SUMMARY ---
+                $lastCol = $persenHadirCol;
+                $sheet->mergeCells("{$sCol}1:{$dlCol}3")->setCellValue("{$sCol}1", 'KETERANGAN');
+                $sheet->mergeCells("{$jumlahCol}1:{$lastCol}3")->setCellValue("{$jumlahCol}1", 'PERSENTASE');
+                $sheet->setCellValue("{$sCol}4", 'S');
+                $sheet->setCellValue("{$iCol}4", 'I');
+                $sheet->setCellValue("{$aCol}4", 'A');
+                $sheet->setCellValue("{$dlCol}4", 'DL');
+                $sheet->setCellValue("{$jumlahCol}4", 'JML');
+                $sheet->setCellValue("{$persenTidakHadirCol}4", '% Tdk Hadir');
+                $sheet->setCellValue("{$persenHadirCol}4", '% Hadir');
+                $sheet->mergeCells("{$sCol}4:{$sCol}5");
+                $sheet->mergeCells("{$iCol}4:{$iCol}5");
+                $sheet->mergeCells("{$aCol}4:{$aCol}5");
+                $sheet->mergeCells("{$dlCol}4:{$dlCol}5");
+                $sheet->mergeCells("{$jumlahCol}4:{$jumlahCol}5");
+                $sheet->mergeCells("{$persenTidakHadirCol}4:{$persenTidakHadirCol}5");
+                $sheet->mergeCells("{$persenHadirCol}4:{$persenHadirCol}5");
                 
                 // --- 5. STYLING ---
                 $lastRow = count($this->semuaGuru) + 5;
-                $lastCol = $persenHadirCol;
                 $fullRange = "A1:{$lastCol}{$lastRow}";
                 
                 $sheet->getStyle($fullRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
@@ -176,9 +178,8 @@ class LaporanBulananExport implements WithEvents
                 $sheet->getStyle($fullRange)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                 $sheet->getStyle("A1:{$lastCol}5")->getFont()->setBold(true);
                 $sheet->getStyle("B6:B{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-
                 $sheet->getStyle("{$sCol}1:{$dlCol}3")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-                $sheet->getStyle("{$jumlahCol}1:{$persenHadirCol}3")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getStyle("{$jumlahCol}1:{$lastCol}3")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
                 $sheet->getColumnDimension('A')->setWidth(5);
                 $sheet->getColumnDimension('B')->setWidth(30);
@@ -190,16 +191,9 @@ class LaporanBulananExport implements WithEvents
                     $sheet->getColumnDimension($col)->setWidth(10);
                 }
                 
-                // ==========================================================
-                // ## REVISI 2: Tambahkan Petunjuk di Bawah Tabel ##
-                // ==========================================================
-                $petunjukRow = $lastRow + 2;
-                $sheet->setCellValue("A{$petunjukRow}", 'KETERANGAN:');
-                $sheet->getStyle("A{$petunjukRow}")->getFont()->setBold(true);
-                $sheet->setCellValue("B{$petunjukRow}", 'Sel dengan latar belakang oranye menandakan guru hadir namun terlambat.');
-                // ==========================================================
+                // --- 6. PETUNJUK (DIHAPUS) ---
+                // Petunjuk untuk warna oranye dihapus.
             },
         ];
     }
 }
-
