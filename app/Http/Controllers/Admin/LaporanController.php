@@ -107,15 +107,16 @@ class LaporanController extends Controller
     {
         $bulan = (int) $request->input('bulan', now()->month);
         $tahun = (int) $request->input('tahun', now()->year);
+        $today = now('Asia/Jakarta')->startOfDay(); // Ambil tanggal hari ini
 
-        $semuaGuru = User::where('role', 'guru')
+        $semuaGuru = \App\Models\User::where('role', 'guru')
             ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) use ($bulan, $tahun) {
                 $query->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun);
             }])
             ->orderBy('name', 'asc')
             ->get();
         
-        $hariLibur = HariLibur::whereMonth('tanggal', $bulan)
+        $hariLibur = \App\Models\HariLibur::whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
             ->pluck('tanggal')
             ->map(fn($date) => $date->toDateString());
@@ -124,28 +125,31 @@ class LaporanController extends Controller
 
         foreach ($semuaGuru as $guru) {
             $totalSesiWajib = 0;
-            // Ambil jadwal hari guru ini (Senin, Selasa, dst.)
             $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
+            $daysInMonth = \Carbon\Carbon::create($tahun, $bulan)->daysInMonth;
 
-            // Loop setiap hari di bulan ini untuk menghitung total sesi wajib
-            for ($i = 1; $i <= Carbon::create($tahun, $bulan)->daysInMonth; $i++) {
-                $tanggal = Carbon::create($tahun, $bulan, $i);
+            // Loop setiap hari di bulan ini
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $tanggal = \Carbon\Carbon::create($tahun, $bulan, $i)->startOfDay();
+                
+                // ==========================================================
+                // ## REVISI LOGIKA: Berhenti menghitung jika tanggal di masa depan ##
+                // ==========================================================
+                if ($tanggal->isFuture()) {
+                    break; // Berhenti looping jika sudah masuk hari esok
+                }
+                
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
 
-                // Lewati jika hari libur atau guru tidak punya jadwal di hari ini
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) {
-                    continue;
+                    continue; // Lewati jika libur atau tidak ada jadwal
                 }
 
-                // Ambil semua jadwal guru untuk hari ini
                 $jadwalUntukHariIni = $jadwalHariGuru->get($namaHari);
-                
-                // Tentukan tipe minggu untuk tanggal ini
-                $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $tanggal)
+                $tipeMinggu = \App\Models\KalenderBlok::whereDate('tanggal_mulai', '<=', $tanggal)
                                 ->whereDate('tanggal_selesai', '>=', $tanggal)
                                 ->first()->tipe_minggu ?? 'Reguler';
                 
-                // Hitung sesi wajib berdasarkan tipe blok
                 foreach ($jadwalUntukHariIni as $jadwal) {
                     if ($jadwal->tipe_blok == 'Setiap Minggu' || 
                        ($jadwal->tipe_blok == 'Hanya Minggu 1' && $tipeMinggu == 'Minggu 1') ||
@@ -155,15 +159,18 @@ class LaporanController extends Controller
                 }
             }
 
-            // Hitung total dari laporan harian yang sudah ada
             $laporanGuru = $guru->laporanHarian;
             $totalHadir = $laporanGuru->where('status', 'Hadir')->count();
             $totalTepatWaktu = $laporanGuru->where('status', 'Hadir')->where('status_keterlambatan', 'Tepat Waktu')->count();
             $totalTerlambat = $laporanGuru->where('status', 'Hadir')->where('status_keterlambatan', 'Terlambat')->count();
             $totalSakit = $laporanGuru->where('status', 'Sakit')->count();
             $totalIzin = $laporanGuru->where('status', 'Izin')->count();
-            $totalAlpa = $laporanGuru->where('status', 'Alpa')->count();
             $totalDL = $laporanGuru->where('status', 'DL')->count();
+
+            // Total Alpa = Sesi Wajib (yang sudah lewat) - (semua status yang tercatat)
+            $totalTercatat = $totalHadir + $totalSakit + $totalIzin + $totalDL;
+            $totalAlpa = $totalSesiWajib - $totalTercatat;
+            if ($totalAlpa < 0) $totalAlpa = 0;
             
             $persentaseHadir = ($totalSesiWajib > 0) ? ($totalHadir / $totalSesiWajib) * 100 : 0;
             $persentaseTepatWaktu = ($totalHadir > 0) ? ($totalTepatWaktu / $totalHadir) * 100 : 0;
@@ -178,7 +185,7 @@ class LaporanController extends Controller
                 'totalAlpa' => $totalAlpa,
                 'totalDL' => $totalDL,
                 'persentaseHadir' => round($persentaseHadir, 2),
-                'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2), // <-- KIRIM DATA BARU
+                'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2),
             ]);
         }
 

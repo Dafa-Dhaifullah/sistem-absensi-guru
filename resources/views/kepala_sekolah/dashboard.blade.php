@@ -6,69 +6,83 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            <!-- Ringkasan Statistik Kehadiran Hari Ini -->
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="text-xl font-bold text-gray-800">Ringkasan Kehadiran Hari Ini</h3>
-                <p class="text-sm text-gray-500">{{ \Carbon\Carbon::now('Asia/Jakarta')->Locale('id_ID')->isoFormat('dddd, D MMMM YYYY') }}</p>
-                
-                <div class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
-                    <!-- Hadir -->
-                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-green-800">{{ $summaryHariIni['hadir'] }}</div>
-                        <div class="text-sm font-medium text-green-700 uppercase tracking-wider">Hadir</div>
+            <div class="bg-white p-6 shadow-sm sm:rounded-lg border-l-4 border-blue-500">
+                <h3 class="text-lg font-medium text-gray-900">Snapshot Jam Pelajaran Saat Ini</h3>
+                @if ($jamKeSekarang)
+                    <p class="text-sm text-gray-600">
+                        Sedang berlangsung: <strong>Jam ke-{{ $jamKeSekarang->jam_ke }}</strong>
+                        ({{ \Carbon\Carbon::parse($jamKeSekarang->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jamKeSekarang->jam_selesai)->format('H:i') }})
+                    </p>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-gray-100 rounded-lg text-center">
+                            <div class="text-sm font-medium text-gray-500 uppercase">Kelas Berlangsung</div>
+                            <div class="text-3xl font-bold text-gray-900">{{ $snapshotStats['totalKelas'] }}</div>
+                        </div>
+                        <div class="p-4 bg-green-100 rounded-lg text-center">
+                            <div class="text-sm font-medium text-green-800 uppercase">Guru di Kelas</div>
+                            <div class="text-3xl font-bold text-green-900">{{ $snapshotStats['guruDiKelas'] }}</div>
+                        </div>
+                        <div class="p-4 bg-red-100 rounded-lg text-center">
+                            <div class="text-sm font-medium text-red-800 uppercase">Kelas Kosong</div>
+                            <div class="text-3xl font-bold text-red-900">{{ $snapshotStats['kelasKosong'] }}</div>
+                        </div>
                     </div>
-                    <!-- Terlambat -->
-                    <a href="{{ route('admin.laporan.terlambat.harian') }}" class="block p-4 bg-orange-50 border border-orange-200 rounded-lg text-center hover:shadow-md transition">
-                        <div class="text-3xl font-bold text-orange-800">{{ $summaryHariIni['terlambat'] }}</div>
-                        <div class="text-sm font-medium text-orange-700 uppercase tracking-wider">Terlambat</div>
+                @else
+                    <p class="mt-2 text-gray-600 font-semibold">Saat ini di luar jam pelajaran atau hari libur.</p>
+                @endif
+                 <div class="mt-4">
+                    <a href="{{ route('admin.laporan.realtime') }}" class="text-sm text-blue-600 hover:text-blue-900 font-medium">
+                        Lihat Detail Jadwal Real-time &rarr;
                     </a>
-                    <!-- Sakit -->
-                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-yellow-800">{{ $summaryHariIni['sakit'] }}</div>
-                        <div class="text-sm font-medium text-yellow-700 uppercase tracking-wider">Sakit</div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+                <h3 class="text-lg font-medium text-gray-900">Ringkasan Kehadiran Harian</h3>
+                <p class="text-sm text-gray-500">{{ \Carbon\Carbon::now('Asia/Jakarta')->isoFormat('dddd, D MMMM YYYY') }}</p>
+                
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="p-4 bg-green-100 rounded-lg text-center">
+                        <div class="text-sm font-medium text-green-800 uppercase">Hadir</div>
+                        <div class="text-3xl font-bold text-green-900">{{ $summaryHariIni['hadir'] }}</div>
                     </div>
-                    <!-- Izin -->
-                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-blue-800">{{ $summaryHariIni['izin'] }}</div>
-                        <div class="text-sm font-medium text-blue-700 uppercase tracking-wider">Izin</div>
+                    <a href="{{ route('admin.laporan.terlambat.harian') }}" class="block p-4 bg-orange-100 rounded-lg text-center hover:shadow-lg transition">
+                        <div class="text-sm font-medium text-orange-800 uppercase">Terlambat</div>
+                        <div class="text-3xl font-bold text-orange-900">{{ $summaryHariIni['terlambat'] }}</div>
+                    </a>
+                    <div class="p-4 bg-yellow-100 rounded-lg text-center">
+                        <div class="text-sm font-medium text-yellow-800 uppercase">Sakit</div>
+                        <div class="text-3xl font-bold text-yellow-900">{{ $summaryHariIni['sakit'] }}</div>
                     </div>
-                    <!-- Alpa -->
-                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-red-800">{{ $summaryHariIni['alpa'] }}</div>
-                        <div class="text-sm font-medium text-red-700 uppercase tracking-wider">Alpa</div>
+                    <div class="p-4 bg-blue-100 rounded-lg text-center">
+                        <div class="text-sm font-medium text-blue-800 uppercase">Izin</div>
+                        <div class="text-3xl font-bold text-blue-900">{{ $summaryHariIni['izin'] }}</div>
                     </div>
-                    <!-- Dinas Luar -->
-                    <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
-                        <div class="text-3xl font-bold text-purple-800">{{ $summaryHariIni['dl'] }}</div>
-                        <div class="text-sm font-medium text-purple-700 uppercase tracking-wider">Dinas Luar</div>
+                    <div class="p-4 bg-red-100 rounded-lg text-center">
+                        <div class="text-sm font-medium text-red-800 uppercase">Alpa</div>
+                        <div class="text-3xl font-bold text-red-900">{{ $summaryHariIni['alpa'] }}</div>
+                    </div>
+                    <div class="p-4 bg-purple-100 rounded-lg text-center">
+                        <div class="text-sm font-medium text-purple-800 uppercase">Dinas Luar</div>
+                        <div class="text-3xl font-bold text-purple-900">{{ $summaryHariIni['dl'] }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Peringatan Akumulasi Ketidakhadiran -->
             @if(isset($guruWarning) && !$guruWarning->isEmpty())
-            <div class="p-5 bg-yellow-50 border border-yellow-300 rounded-xl shadow-sm" role="alert">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <svg class="h-6 w-6 text-yellow-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-yellow-800">Peringatan Akumulasi Ketidakhadiran (Bulan Ini)</h4>
-                        <p class="text-sm text-yellow-700 mt-1">Guru berikut telah mencapai atau melebihi batas maksimal ketidakhadiran (Sakit + Izin + Alpa >= 4 kali):</p>
-                        <ul class="mt-2 list-disc list-inside text-sm text-yellow-700">
-                            @foreach($guruWarning as $guru)
-                                <li>
-                                    <strong>{{ $guru->name }}</strong> 
-                                    (Total {{ $guru->total_tidak_hadir }} kali tidak hadir)
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
+            <div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-800 rounded-r-lg" role="alert">
+                <h4 class="font-bold">Peringatan Akumulasi Ketidakhadiran (Bulan Ini)</h4>
+                <p class="text-sm">Guru berikut telah mencapai atau melebihi batas maksimal ketidakhadiran harian (Sakit + Izin + Alpa >= 4 hari):</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    @foreach($guruWarning as $guru)
+                        <li>
+                            <strong>{{ $guru->name }}</strong> 
+                            (Total {{ $guru->total_tidak_hadir }} hari tidak hadir)
+                        </li>
+                    @endforeach
+                </ul>
             </div>
             @endif
 

@@ -31,14 +31,15 @@ class LaporanSesiExport implements WithEvents
      */
     private function getLaporanData()
     {
-        $semuaGuru = User::where('role', 'guru')
+        $today = now('Asia/Jakarta')->startOfDay();
+        $semuaGuru = \App\Models\User::where('role', 'guru')
             ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) {
                 $query->whereMonth('tanggal', $this->bulan)->whereYear('tanggal', $this->tahun);
             }])
             ->orderBy('name', 'asc')
             ->get();
         
-        $hariLibur = HariLibur::whereMonth('tanggal', $this->bulan)
+        $hariLibur = \App\Models\HariLibur::whereMonth('tanggal', $this->bulan)
             ->whereYear('tanggal', $this->tahun)
             ->pluck('tanggal')
             ->map(fn($date) => $date->toDateString());
@@ -48,9 +49,18 @@ class LaporanSesiExport implements WithEvents
         foreach ($semuaGuru as $guru) {
             $totalSesiWajib = 0;
             $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
+            $daysInMonth = \Carbon\Carbon::create($this->tahun, $this->bulan)->daysInMonth;
 
-            for ($i = 1; $i <= \Carbon\Carbon::create($this->tahun, $this->bulan)->daysInMonth; $i++) {
-                $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i);
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i)->startOfDay();
+                
+                // ==========================================================
+                // ## REVISI LOGIKA: Berhenti menghitung jika tanggal di masa depan ##
+                // ==========================================================
+                if ($tanggal->isFuture()) {
+                    break; // Berhenti looping jika sudah masuk hari esok
+                }
+                
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
 
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) {
@@ -77,8 +87,12 @@ class LaporanSesiExport implements WithEvents
             $totalTerlambat = $laporanGuru->where('status', 'Hadir')->where('status_keterlambatan', 'Terlambat')->count();
             $totalSakit = $laporanGuru->where('status', 'Sakit')->count();
             $totalIzin = $laporanGuru->where('status', 'Izin')->count();
-            $totalAlpa = $laporanGuru->where('status', 'Alpa')->count();
             $totalDL = $laporanGuru->where('status', 'DL')->count();
+            
+            // Total Alpa = Sesi Wajib (yang sudah lewat) - (semua status yang tercatat)
+            $totalTercatat = $totalHadir + $totalSakit + $totalIzin + $totalDL;
+            $totalAlpa = $totalSesiWajib - $totalTercatat;
+            if ($totalAlpa < 0) $totalAlpa = 0;
             
             $persentaseHadir = ($totalSesiWajib > 0) ? ($totalHadir / $totalSesiWajib) * 100 : 0;
             $persentaseTepatWaktu = ($totalHadir > 0) ? ($totalTepatWaktu / $totalHadir) * 100 : 0;
@@ -92,8 +106,8 @@ class LaporanSesiExport implements WithEvents
                 'totalIzin' => $totalIzin,
                 'totalAlpa' => $totalAlpa,
                 'totalDL' => $totalDL,
-                'persentaseHadir' => round($persentaseHadir, 2) . '%',
-                'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2) . '%',
+                'persentaseHadir' => round($persentaseHadir, 2),
+                'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2),
             ]);
         }
         return $laporanPerSesi;
