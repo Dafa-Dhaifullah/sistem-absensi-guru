@@ -42,7 +42,7 @@ class AkunPiketController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:'.User::class],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,kepala_sekolah,piket,guru'], // <-- VALIDASI BARU
+            'role' => ['required', 'in:admin,pimpinan,piket,guru'], // <-- VALIDASI BARU
         ]);
 
         User::create([
@@ -85,7 +85,7 @@ class AkunPiketController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:'.User::class.',username,'.$user->id],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,kepala_sekolah,piket,guru'], // <-- VALIDASI BARU
+            'role' => ['required', 'in:admin,pimpinan,piket,guru'], // <-- VALIDASI BARU
         ]);
 
         $dataUpdate = [

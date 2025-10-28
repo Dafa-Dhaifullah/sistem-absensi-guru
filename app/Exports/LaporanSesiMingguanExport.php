@@ -6,44 +6,38 @@ use App\Models\User;
 use App\Models\HariLibur;
 use App\Models\JadwalPelajaran;
 use App\Models\KalenderBlok;
-use App\Models\LaporanHarian;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class LaporanSesiExport implements WithEvents
+class LaporanSesiMingguanExport implements WithEvents
 {
-    protected $bulan;
-    protected $tahun;
-    protected $namaBulan;
+    protected $tanggalMulai;
+    protected $tanggalSelesai;
     protected $laporanData;
 
-    public function __construct(int $bulan, int $tahun)
+    public function __construct(string $tanggalMulai, string $tanggalSelesai)
     {
-        $this->bulan = $bulan;
-        $this->tahun = $tahun;
-        $this->namaBulan = \Carbon\Carbon::create()->month($bulan)->locale('id_ID')->isoFormat('MMMM');
+        $this->tanggalMulai = $tanggalMulai;
+        $this->tanggalSelesai = $tanggalSelesai;
         $this->laporanData = $this->getLaporanData();
     }
 
-    /**
-     * Logika utama untuk mengambil dan memproses data laporan.
-     */
     private function getLaporanData()
     {
         $today = now('Asia/Jakarta')->startOfDay();
+        $tanggalRange = \Carbon\Carbon::parse($this->tanggalMulai)->locale('id_ID')->toPeriod(\Carbon\Carbon::parse($this->tanggalSelesai));
+        
         $semuaGuru = User::where('role', 'guru')
             ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) {
-                $query->whereMonth('tanggal', $this->bulan)->whereYear('tanggal', $this->tahun);
+                $query->whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai]);
             }])
             ->orderBy('name', 'asc')
             ->get();
         
-        $hariLibur = HariLibur::whereMonth('tanggal', $this->bulan)
-            ->whereYear('tanggal', $this->tahun)
+        $hariLibur = HariLibur::whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai])
             ->pluck('tanggal')
             ->map(fn($date) => $date->toDateString());
 
@@ -54,11 +48,9 @@ class LaporanSesiExport implements WithEvents
             $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
 
             $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
-            $daysInMonth = \Carbon\Carbon::create($this->tahun, $this->bulan)->daysInMonth;
 
-            for ($i = 1; $i <= $daysInMonth; $i++) {
-                $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i)->startOfDay();
-                if ($tanggal->isFuture()) break; // Berhenti jika hari di masa depan
+            foreach ($tanggalRange as $tanggal) {
+                if ($tanggal->isFuture()) break;
                 
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
@@ -69,31 +61,23 @@ class LaporanSesiExport implements WithEvents
                     ->whereIn('tipe_blok', ['Setiap Minggu', $tipeMinggu])
                     ->sortBy('jam_ke');
                 
-                // --- LOGIKA PENGELOMPOKKAN BLOK ---
                 $tempBlock = null;
                 $jadwalBlok = collect();
                 foreach ($jadwalUntukHariIni as $jadwal) {
                     if ($tempBlock && $jadwal->jam_ke == $tempBlock['jam_terakhir'] + 1 && $jadwal->kelas == $tempBlock['kelas']) {
-                        $tempBlock['jadwal_ids'][] = $jadwal->id;
-                        $tempBlock['jam_terakhir'] = $jadwal->jam_ke;
+                        $tempBlock['jadwal_ids'][] = $jadwal->id; $tempBlock['jam_terakhir'] = $jadwal->jam_ke;
                     } else {
                         if ($tempBlock) $jadwalBlok->push($tempBlock);
-                        $tempBlock = [
-                            'jadwal_ids' => [$jadwal->id], 'jam_pertama' => $jadwal->jam_ke,
-                            'jam_terakhir' => $jadwal->jam_ke, 'kelas' => $jadwal->kelas,
-                        ];
+                        $tempBlock = ['jadwal_ids' => [$jadwal->id], 'jam_pertama' => $jadwal->jam_ke, 'jam_terakhir' => $jadwal->jam_ke, 'kelas' => $jadwal->kelas];
                     }
                 }
                 if ($tempBlock) $jadwalBlok->push($tempBlock);
-                // --- AKHIR LOGIKA BLOK ---
 
                 $totalSesiWajib += $jadwalBlok->count();
 
-                // Hitung status untuk setiap blok
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
                     $laporan = $guru->laporanHarian->where('jadwal_pelajaran_id', $jadwalPertamaId)->first();
-
                     if ($laporan) {
                         if ($laporan->status == 'Hadir') {
                             $totalHadir++;
@@ -114,14 +98,10 @@ class LaporanSesiExport implements WithEvents
             $persentaseTepatWaktu = ($totalHadir > 0) ? ($totalTepatWaktu / $totalHadir) * 100 : 0;
 
             $laporanPerSesi->push([
-                'name' => $guru->name,
-                'totalSesiWajib' => $totalSesiWajib,
-                'totalHadir' => $totalHadir,
-                'totalTerlambat' => $totalTerlambat,
-                'totalSakit' => $totalSakit,
-                'totalIzin' => $totalIzin,
-                'totalAlpa' => $totalAlpa,
-                'totalDL' => $totalDL,
+                'name' => $guru->name, 'totalSesiWajib' => $totalSesiWajib,
+                'totalHadir' => $totalHadir, 'totalTerlambat' => $totalTerlambat,
+                'totalSakit' => $totalSakit, 'totalIzin' => $totalIzin,
+                'totalAlpa' => $totalAlpa, 'totalDL' => $totalDL,
                 'persentaseHadir' => round($persentaseHadir, 2) . '%',
                 'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2) . '%',
             ]);
@@ -134,31 +114,32 @@ class LaporanSesiExport implements WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-
-                // --- 1. MEMBUAT JUDUL ---
+                
                 $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
+                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI MINGGUAN');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                // --- 2. MEMBUAT HEADER TABEL ---
+                $sheet->mergeCells('A2:J2');
+                $sheet->setCellValue('A2', 'PERIODE: ' . \Carbon\Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . \Carbon\Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
+                $sheet->getStyle('A2')->getFont()->setItalic(true);
+                $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
                 $headings = [
                     'Nama Guru', 'Total Sesi Wajib', 'Sesi Hadir', 'Sesi Terlambat',
                     'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
                 ];
-                $sheet->fromArray($headings, null, 'A3'); // Mulai dari baris 3
-                $sheet->getStyle('A3:J3')->getFont()->setBold(true);
-                $sheet->getStyle('A3:J3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
+                $sheet->fromArray($headings, null, 'A4');
+                $sheet->getStyle('A4:J4')->getFont()->setBold(true);
+                $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
 
-                // --- 3. MENGISI DATA ---
-                $sheet->fromArray($this->laporanData->toArray(), null, 'A4'); // Mulai dari baris 4
+                $sheet->fromArray($this->laporanData->toArray(), null, 'A5');
 
-                // --- 4. STYLING ---
-                $lastRow = count($this->laporanData) + 3;
-                $sheet->getStyle("A3:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getStyle("B3:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getStyle("A4:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle("I4:J{$lastRow}")->getFont()->setBold(true);
+                $lastRow = count($this->laporanData) + 4;
+                $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->getStyle("B4:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("A5:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("I5:J{$lastRow}")->getFont()->setBold(true);
                 
                 $sheet->getColumnDimension('A')->setAutoSize(true);
                 foreach (range('B', 'J') as $columnID) {

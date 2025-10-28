@@ -2,57 +2,31 @@
 
 namespace App\Exports;
 
-use App\Models\User;
-use App\Models\HariLibur;
-use App\Models\JadwalPelajaran;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Collection;
 
 class LaporanMingguanExport implements WithEvents
 {
+    protected $laporanHarianTeringkas;
+    protected $summaryTotal;
+    protected $tanggalRange;
     protected $tanggalMulai;
     protected $tanggalSelesai;
-    protected $semuaGuru;
-    protected $tanggalRange;
-    protected $hariKerjaEfektif = [];
+    protected $semuaGuru; // Dibutuhkan untuk mapping key
 
-    public function __construct(string $tanggalMulai, string $tanggalSelesai)
+    // Konstruktor sekarang menerima data yang sudah diproses dari controller
+    public function __construct(Collection $laporanHarianTeringkas, array $summaryTotal, Collection $semuaGuru, $tanggalRange, $tanggalMulai, $tanggalSelesai)
     {
+        $this->laporanHarianTeringkas = $laporanHarianTeringkas;
+        $this->summaryTotal = $summaryTotal;
+        $this->semuaGuru = $semuaGuru; // Ambil collection User
+        $this->tanggalRange = $tanggalRange;
         $this->tanggalMulai = $tanggalMulai;
         $this->tanggalSelesai = $tanggalSelesai;
-        $this->tanggalRange = \Carbon\Carbon::parse($this->tanggalMulai)->locale('id_ID')->toPeriod(\Carbon\Carbon::parse($this->tanggalSelesai));
-
-        $this->semuaGuru = User::where('role', 'guru')
-            ->with(['laporanHarian' => function ($query) {
-                $query->whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai]);
-            }, 'jadwalPelajaran'])
-            ->orderBy('name', 'asc')->get();
-        
-        $this->hitungHariKerja();
-    }
-
-    // Fungsi untuk menghitung hari kerja efektif per guru
-    private function hitungHariKerja()
-    {
-        $hariLibur = HariLibur::whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai])
-            ->pluck('tanggal')->map(fn($date) => $date->toDateString());
-        
-        foreach($this->semuaGuru as $guru) {
-            $jadwalHariGuru = $guru->jadwalPelajaran->pluck('hari')->unique();
-            $hariKerjaList = collect(); 
-
-            foreach ($this->tanggalRange as $tanggal) {
-                $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
-                if ($jadwalHariGuru->contains($namaHari) && !$hariLibur->contains($tanggal->toDateString())) {
-                    $hariKerjaList->push($tanggal->toDateString());
-                }
-            }
-            $this->hariKerjaEfektIF[$guru->id] = $hariKerjaList;
-        }
     }
 
     public function registerEvents(): array
@@ -60,20 +34,18 @@ class LaporanMingguanExport implements WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $today = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
                 $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
 
-                // --- 1. JUDUL LAPORAN (BARU) ---
-                $sheet->mergeCells('A1:M1');
+                // --- 1. JUDUL LAPORAN ---
+                $sheet->mergeCells('A1:H1');
                 $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI MINGGUAN');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->mergeCells('A2:M2');
+                $sheet->mergeCells('A2:H2');
                 $sheet->setCellValue('A2', 'PERIODE: ' . \Carbon\Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . \Carbon\Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
                 $sheet->getStyle('A2')->getFont()->setItalic(true);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
 
                 // --- 2. PETUNJUK ---
                 $sheet->setCellValue('A4', 'PETUNJUK:');
@@ -102,58 +74,38 @@ class LaporanMingguanExport implements WithEvents
                 $sheet->setCellValue("{$dlCol}7", 'DL');
 
                 // --- 5. ISI DATA ---
-                $rowIndex = 8; // Mulai dari baris 8
-                foreach ($this->semuaGuru as $guru) {
-                    $sheet->setCellValue('A' . $rowIndex, $guru->name);
+                $rowIndex = 8;
+                $summaryKeys = array_keys($this->summaryTotal); // Ambil semua User ID
+                
+                foreach ($this->laporanHarianTeringkas as $index => $laporan) {
+                    $sheet->setCellValue('A' . $rowIndex, $laporan['name']);
                     
-                    $totalHadir = 0; $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
                     $colIndex = 2;
-
                     foreach ($this->tanggalRange as $tanggal) {
                         $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-                        $tanggalCek = $tanggal->toDateString();
-                        $cellValue = '-';
-                        $isHariKerja = isset($this->hariKerjaEfektif[$guru->id]) && $this->hariKerjaEfektif[$guru->id]->contains($tanggalCek);
-
-                        if ($isHariKerja) {
-                            $laporanPerHari = $guru->laporanHarian->where('tanggal', $tanggalCek);
-                            if ($laporanPerHari->isNotEmpty()) {
-                                if ($laporanPerHari->contains('status', 'Hadir')) {
-                                    $cellValue = 'H'; $totalHadir++;
-                                } elseif ($laporanPerHari->contains('status', 'DL')) {
-                                    $cellValue = 'DL'; $totalDL++;
-                                } elseif ($laporanPerHari->contains('status', 'Sakit')) {
-                                    $cellValue = 'S'; $totalSakit++;
-                                } elseif ($laporanPerHari->contains('status', 'Izin')) {
-                                    $cellValue = 'I'; $totalIzin++;
-                                } else {
-                                    $cellValue = 'A'; $totalAlpa++;
-                                }
-                            } else {
-                                if ($tanggal->isBefore($today)) {
-                                    $cellValue = 'A'; $totalAlpa++;
-                                } else {
-                                    $cellValue = '-';
-                                }
-                            }
-                        }
-                        $sheet->setCellValue($col . $rowIndex, $cellValue);
+                        $status = $laporan['dataHarian'][$tanggal->toDateString()];
+                        $sheet->setCellValue($col . $rowIndex, $status);
                         $colIndex++;
                     }
                     
                     // Isi Summary
-                    $sheet->setCellValue("{$hCol}{$rowIndex}", $totalHadir ?: '0');
-                    $sheet->setCellValue("{$sCol}{$rowIndex}", $totalSakit ?: '0');
-                    $sheet->setCellValue("{$iCol}{$rowIndex}", $totalIzin ?: '0');
-                    $sheet->setCellValue("{$aCol}{$rowIndex}", $totalAlpa ?: '0');
-                    $sheet->setCellValue("{$dlCol}{$rowIndex}", $totalDL ?: '0');
+                    $currentKey = $summaryKeys[$index];
+                    $summary = $this->summaryTotal[$currentKey];
+                    
+                    $sheet->setCellValue("{$hCol}{$rowIndex}", $summary['totalHadir'] ?: '0');
+                    $sheet->setCellValue("{$sCol}{$rowIndex}", $summary['totalSakit'] ?: '0');
+                    $sheet->setCellValue("{$iCol}{$rowIndex}", $summary['totalIzin'] ?: '0');
+                    $sheet->setCellValue("{$aCol}{$rowIndex}", $summary['totalAlpa'] ?: '0');
+                    $sheet->setCellValue("{$dlCol}{$rowIndex}", $summary['totalDL'] ?: '0');
                     
                     $rowIndex++;
                 }
 
                 // --- 6. STYLING ---
                 $lastCol = $dlCol;
-                $lastRow = count($this->semuaGuru) + 7; // Mulai dari 7 + jumlah guru
+                $lastRow = count($this->laporanHarianTeringkas) + 7;
+                if(count($this->laporanHarianTeringkas) == 0) $lastRow = 8; // Pengaman jika data kosong
+                
                 $sheet->getStyle("A7:{$lastCol}{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 $sheet->getStyle("A7:{$lastCol}7")->getFont()->setBold(true);
                 $sheet->getStyle("A7:{$lastCol}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);

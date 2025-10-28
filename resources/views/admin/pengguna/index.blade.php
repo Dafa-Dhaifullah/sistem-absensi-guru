@@ -37,7 +37,7 @@
                                 <select name="role" id="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Semua Role</option>
                                     <option value="admin" @if(request('role') == 'admin') selected @endif>Admin</option>
-                                    <option value="kepala_sekolah" @if(request('role') == 'kepala_sekolah') selected @endif>Kepala Sekolah</option>
+                                    <option value="pimpinan" @if(request('role') == 'pimpinan') selected @endif>Pimpinan</option>
                                    
                                     <option value="guru" @if(request('role') == 'guru') selected @endif>Guru</option>
                                 </select>

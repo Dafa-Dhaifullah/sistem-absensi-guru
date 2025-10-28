@@ -39,7 +39,7 @@ class PenggunaImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'email' => 'nullable|email|max:255|unique:users,email',
             'nip' => ['nullable', 'regex:/^[0-9]+$/', 'unique:users,nip'],
             'no_wa' => ['nullable', 'regex:/^[0-9]+$/'], 
-            'role' => 'required|in:admin,kepala_sekolah,guru',
+            'role' => 'required|in:admin,pimpinan,guru',
         ];
     }
 
@@ -58,7 +58,7 @@ class PenggunaImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'email.unique' => 'Email ":value" sudah terdaftar di sistem.',
             'nip.unique' => 'NIP ":value" sudah terdaftar di sistem.',
 
-            'role.in' => 'Nilai untuk kolom role tidak valid. Gunakan: admin, kepala_sekolah, atau guru.',
+            'role.in' => 'Nilai untuk kolom role tidak valid. Gunakan: admin, pimpinan, atau guru.',
             '*.numeric' => 'Kolom :attribute harus berupa angka.',
 
             'nip.regex' => 'Kolom nip hanya boleh berisi angka.',

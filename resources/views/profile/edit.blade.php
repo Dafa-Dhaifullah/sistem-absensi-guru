@@ -1,7 +1,7 @@
 @php
 // 1. Tentukan nama komponen layout berdasarkan role pengguna yang login
 $layoutComponent = 'app-layout'; // Default
-if (in_array(Auth::user()->role, ['admin', 'kepala_sekolah'])) {
+if (in_array(Auth::user()->role, ['admin', 'pimpinan'])) {
     $layoutComponent = 'admin-layout';
 } elseif (in_array(Auth::user()->role, ['guru', 'piket'])) {
     $layoutComponent = 'teacher-layout';

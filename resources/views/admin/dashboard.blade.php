@@ -84,11 +84,11 @@
                                 <p class="text-xs text-gray-500 mt-1">Kelola akun administrator.</p>
                             </div>
                         </a>
-                        <a href="{{ route('admin.pengguna.index', ['role' => 'kepala_sekolah']) }}" class="group flex items-center gap-4 p-4 bg-slate-50 rounded-lg hover:bg-purple-50 transition">
+                        <a href="{{ route('admin.pengguna.index', ['role' => 'pimpinan']) }}" class="group flex items-center gap-4 p-4 bg-slate-50 rounded-lg hover:bg-purple-50 transition">
                             <div class="flex-shrink-0 bg-purple-100 p-3 rounded-lg"><svg class="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.075c0 1.313-.964 2.505-2.287 2.697H5.287c-1.323-.192-2.287-1.384-2.287-2.697v-4.075M12 12.25c-2.485 0-4.5-2.015-4.5-4.5s2.015-4.5 4.5-4.5 4.5 2.015 4.5 4.5-2.015 4.5-4.5 4.5z" /></svg></div>
                             <div>
-                                <div class="font-semibold text-gray-800 group-hover:text-purple-800">Data Kepala Sekolah</div>
-                                <p class="text-xs text-gray-500 mt-1">Kelola akun kepala sekolah.</p>
+                                <div class="font-semibold text-gray-800 group-hover:text-purple-800">Data Pimpinan</div>
+                                <p class="text-xs text-gray-500 mt-1">Kelola akun pimpinan.</p>
                             </div>
                         </a>
                         
@@ -125,7 +125,7 @@
                             <div class="flex-shrink-0 bg-slate-200 p-3 rounded-lg"><svg class="h-6 w-6 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg></div>
                             <div>
                                 <div class="font-semibold text-gray-800">Kalender Blok</div>
-                                <p class="text-xs text-gray-500 mt-1">Kelola tanggal yang diblokir.</p>
+                                <p class="text-xs text-gray-500 mt-1">Kelola tanggal perblok.</p>
                             </div>
                         </a>
                         <a href="{{ route('admin.hari-libur.index') }}" class="group flex items-center gap-4 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition">

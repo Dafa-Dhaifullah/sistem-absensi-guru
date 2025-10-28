@@ -41,7 +41,7 @@
                                     <select id="role" name="role" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
                                         <option value="" disabled {{ old('role', $role) ? '' : 'selected' }}>-- Pilih Hak Akses --</option>
                                         <option value="admin" {{ old('role', $role) == 'admin' ? 'selected' : '' }}>Admin (TU)</option>
-                                        <option value="kepala_sekolah" {{ old('role', $role) == 'kepala_sekolah' ? 'selected' : '' }}>Kepala Sekolah</option>
+                                        <option value="kepala_sekolah" {{ old('role', $role) == 'pimpinan' ? 'selected' : '' }}>Pimpinan</option>
                                         <option value="guru" {{ old('role', $role) == 'guru' ? 'selected' : '' }}>Guru</option>
                                     </select>
                                     <x-input-error :messages="$errors->get('role')" class="mt-2" />

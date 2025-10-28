@@ -24,7 +24,7 @@ use App\Http\Controllers\DisplayController;
 use App\Http\Controllers\QrCodeController;
 
 // Controller Role Spesifik
-use App\Http\Controllers\KepalaSekolah\DashboardController as KepalaSekolahDashboardController;
+use App\Http\Controllers\Pimpinan\DashboardController as PimpinanDashboardController;
 use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
 use App\Http\Controllers\Guru\AbsenController;
 use App\Http\Controllers\Guru\RiwayatController;
@@ -58,8 +58,8 @@ Route::middleware('auth')->group(function () {
         $role = $user->role;
 
         if ($role == 'admin') { return redirect()->route('admin.dashboard'); }
-        if ($role == 'kepala_sekolah') { return redirect()->route('kepala-sekolah.dashboard'); }
-        if ($role == 'guru') {
+        elseif ($role == 'pimpinan') { return redirect()->route('pimpinan.dashboard'); }
+        elseif ($role == 'guru') {
             $isPiket = \App\Models\JadwalPiket::where('user_id', $user->id)
                 ->where('hari', now('Asia/Jakarta')->locale('id_ID')->isoFormat('dddd'))
                 ->where('sesi', (now('Asia/Jakarta')->hour < 12 ? 'Pagi' : 'Siang'))
@@ -114,11 +114,13 @@ Route::get('qrcode-generator/print', [QrCodeGeneratorController::class, 'print']
 // ======================================================================
 // === GRUP RUTE UNTUK ADMIN & KEPALA SEKOLAH (LAPORAN) ===
 // ======================================================================
-Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin,pimpinan'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('laporan/realtime', [LaporanController::class, 'realtime'])->name('laporan.realtime');
     Route::get('laporan/bulanan', [LaporanController::class, 'bulanan'])->name('laporan.bulanan');
     Route::get('laporan/mingguan', [LaporanController::class, 'mingguan'])->name('laporan.mingguan');
+    Route::get('laporan/mingguan-sesi', [LaporanController::class, 'mingguanSesi'])->name('laporan.mingguan.sesi');
+Route::get('laporan/export/mingguan-sesi', [LaporanController::class, 'exportMingguanSesi'])->name('laporan.export.mingguan-sesi');
     Route::get('laporan/individu', [LaporanController::class, 'individu'])->name('laporan.individu');
     Route::get('laporan/arsip', [LaporanController::class, 'arsip'])->name('laporan.arsip');
     Route::get('laporan/override-log', [OverrideLogController::class, 'index'])->name('laporan.override_log');
@@ -136,8 +138,8 @@ Route::middleware(['auth', 'role:admin,kepala_sekolah'])->prefix('admin')->name(
 // ======================================================================
 // === GRUP RUTE KHUSUS (KEPALA SEKOLAH, GURU, PIKET) ===
 // ======================================================================
-Route::middleware(['auth', 'role:kepala_sekolah'])->prefix('kepala-sekolah')->name('kepala-sekolah.')->group(function () {
-    Route::get('/dashboard', [KepalaSekolahDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'role:pimpinan'])->prefix('pimpinan')->name('pimpinan.')->group(function () {
+    Route::get('/dashboard', [PimpinanDashboardController::class, 'index'])->name('dashboard');
 });
 
 Route::middleware(['auth', 'role:guru'])->prefix('piket')->name('piket.')->group(function () {

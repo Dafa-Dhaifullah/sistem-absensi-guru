@@ -90,7 +90,7 @@ class PenggunaController extends Controller
             'nip' => 'nullable|numeric|unique:users,nip',
             'no_wa' => 'nullable|numeric',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,kepala_sekolah,guru',
+            'role' => 'required|in:admin,pimpinan,guru',
         ], [
             
             'username.regex' => 'Username hanya boleh berisi huruf, angka, dan spasi.'
@@ -128,7 +128,7 @@ class PenggunaController extends Controller
             'nip' => 'nullable|numeric|unique:users,nip,' . $pengguna->id,
             'no_wa' => 'nullable|numeric',
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,kepala_sekolah,guru',
+            'role' => 'required|in:admin,pimpinan,guru',
         ], [
             'username.regex' => 'Username hanya boleh berisi huruf, angka, dan spasi.'
         ]);

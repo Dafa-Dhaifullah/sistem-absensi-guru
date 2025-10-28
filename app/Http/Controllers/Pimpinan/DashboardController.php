@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\KepalaSekolah;
+namespace App\Http\Controllers\Pimpinan;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -108,7 +108,7 @@ class DashboardController extends Controller
             ->having('total_tidak_hadir', '>=', $batasAbsen)
             ->get();
 
-        return view('kepala_sekolah.dashboard', [
+        return view('pimpinan.dashboard', [
             'jamKeSekarang' => $jamKeSekarang,
             'snapshotStats' => $snapshotStats,
             'summaryHariIni' => $summaryHariIni,

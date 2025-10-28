@@ -35,7 +35,7 @@
                             <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">2</div>
                             <div>
                                 <h4 class="font-semibold text-gray-800">Hubungi Guru</h4>
-                                <p class="text-sm text-gray-600">Jika ada guru berstatus "Belum Absen" mendekati atau lebih dari Jam Pertama masuknya, gunakan tombol WhatsApp untuk konfirmasi.</p>
+                                <p class="text-sm text-gray-600">Jika ada guru berstatus "Belum Absen" mendekati atau lebih dari Jam masuknya, gunakan tombol WhatsApp untuk konfirmasi.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-4">

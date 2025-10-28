@@ -42,37 +42,7 @@
                 </div>
             </div>
 
-            <div class="bg-white shadow sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900">Statistik Kehadiran Bulan Ini ({{ now()->isoFormat('MMMM YYYY') }})</h3>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <div class="p-4 bg-green-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-green-800 uppercase">Hadir</div>
-                            <div class="text-3xl font-bold text-green-900">{{ $summary['hadir'] }}</div>
-                        </div>
-                        <div class="p-4 bg-orange-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-orange-800 uppercase">Terlambat</div>
-                            <div class="text-3xl font-bold text-orange-900">{{ $summary['terlambat'] }}</div>
-                        </div>
-                        <div class="p-4 bg-yellow-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-yellow-800 uppercase">Sakit</div>
-                            <div class="text-3xl font-bold text-yellow-900">{{ $summary['sakit'] }}</div>
-                        </div>
-                        <div class="p-4 bg-blue-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-blue-800 uppercase">Izin</div>
-                            <div class="text-3xl font-bold text-blue-900">{{ $summary['izin'] }}</div>
-                        </div>
-                        <div class="p-4 bg-red-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-red-800 uppercase">Alpa</div>
-                            <div class="text-3xl font-bold text-red-900">{{ $summary['alpa'] }}</div>
-                        </div>
-                        <div class="p-4 bg-purple-100 rounded-lg text-center">
-                            <div class="text-sm font-medium text-purple-800 uppercase">Dinas Luar</div>
-                            <div class="text-3xl font-bold text-purple-900">{{ $summary['dl'] }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+           
 
         </div>
     </div>

@@ -43,7 +43,7 @@
                 </div>
             </div>
 
-            @if ($laporan)
+           @if ($laporan)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         
@@ -60,8 +60,9 @@
                             </a>
                         </div>
                         
+                        <!-- Ringkasan (Summary) Sesi -->
                         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                            <div class="p-4 bg-gray-100 rounded-lg text-center"><div class="text-sm uppercase">Total Sesi Tercatat</div><div class="text-3xl font-bold">{{ $summary['Total'] }}</div></div>
+                            <div class="p-4 bg-gray-100 rounded-lg text-center"><div class="text-sm uppercase">Total Sesi Wajib</div><div class="text-3xl font-bold">{{ $summary['Total'] }}</div></div>
                             <div class="p-4 bg-green-100 rounded-lg text-center"><div class="text-sm uppercase">Hadir Tepat Waktu</div><div class="text-3xl font-bold">{{ $summary['Hadir'] - $summary['Terlambat'] }}</div></div>
                             <div class="p-4 bg-orange-100 rounded-lg text-center"><div class="text-sm uppercase">Terlambat</div><div class="text-3xl font-bold">{{ $summary['Terlambat'] }}</div></div>
                             <div class="p-4 bg-yellow-100 rounded-lg text-center"><div class="text-sm uppercase">Sakit</div><div class="text-3xl font-bold">{{ $summary['Sakit'] }}</div></div>
@@ -70,12 +71,15 @@
                             <div class="p-4 bg-purple-100 rounded-lg text-center"><div class="text-sm uppercase">Dinas Luar</div><div class="text-3xl font-bold">{{ $summary['DL'] }}</div></div>
                         </div>
 
+                        <!-- ========================================================== -->
+                        <!-- == REVISI TABEL LOG SESI == -->
+                        <!-- ========================================================== -->
                         <div class="overflow-x-auto border rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Sesi</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sesi Mengajar</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
                                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Bukti Foto</th>
@@ -88,8 +92,8 @@
                                                 {{ \Carbon\Carbon::parse($log->tanggal)->locale('id_ID')->isoFormat('dddd, D MMM Y') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                                Jam ke-{{ $log->jadwalPelajaran->jam_ke ?? '?' }}
-                                                ({{ $log->jadwalPelajaran->kelas ?? 'N/A' }})
+                                                Jam {{ $log->jam_pertama }}{{ $log->jam_pertama != $log->jam_terakhir ? '-' . $log->jam_terakhir : '' }}
+                                                <span classah="font-semibold text-gray-900"> ({{ $log->kelas }})</span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 @php
@@ -118,6 +122,8 @@
                                                     Absen mandiri jam {{ \Carbon\Carbon::parse($log->jam_absen)->format('H:i') }}
                                                 @elseif($log->keterangan_piket)
                                                     {{ $log->keterangan_piket }}
+                                                @elseif($log->status == 'Alpa')
+                                                    Tidak ada catatan absensi
                                                 @else
                                                     -
                                                 @endif
@@ -134,7 +140,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
                                                 Tidak ada data laporan pada rentang tanggal ini.
                                             </td>
                                         </tr>

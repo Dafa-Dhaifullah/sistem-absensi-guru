@@ -35,7 +35,7 @@
             <div class="w-full sm:max-w-md mt-6 px-6 py-8 bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm shadow-xl overflow-hidden sm:rounded-lg border border-gray-200">
                 
                 <h2 class="text-center text-3xl font-extrabold text-gray-800 mb-6 mt-2">
-                    Absensi Guru
+                    Presensi Guru
                 </h2>
                 
                 <x-auth-session-status class="mb-4" :status="session('status')" />

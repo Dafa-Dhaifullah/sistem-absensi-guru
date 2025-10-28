@@ -28,7 +28,7 @@
                             <li>Isi data pengguna. Pastikan nama header tidak diubah.</li>
                             <li>Kolom <strong>"nama"</strong> dan <strong>"username"</strong> wajib diisi.</li>
                             <li>Pastikan username tidak ada yang sama.</li>
-                            <li>Kolom <strong>"role"</strong> harus diisi dengan: "guru", "kepala_sekolah", atau "admin".</li>
+                            <li>Kolom <strong>"role"</strong> harus diisi dengan: "guru", "pimpinan", atau "admin".</li>
                             <li>Password untuk semua akun baru akan otomatis di-set ke <strong>"smkn6garut"</strong>.</li>
                         </ul>
                         <div class="mt-4">

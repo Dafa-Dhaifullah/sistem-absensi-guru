@@ -111,8 +111,8 @@
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="{{ asset('images/logo-sekolah.png') }}" alt="Logo Sekolah" class="h-9 w-9 rounded-md object-contain"/>
                     <div class="truncate" x-show="!sidebarMini" x-transition>
-                        <div class="text-lg font-semibold leading-tight">SAG</div>
-                        <div class="text-xs text-gray-300 leading-tight">Sistem Absensi Guru</div>
+                        <div class="text-lg font-semibold leading-tight">PRESGO</div>
+                        <div class="text-xs text-gray-300 leading-tight">Presensi Guru Online</div>
                     </div>
                 </div>
                 <!-- Toggle mini -->
@@ -136,7 +136,7 @@
         @php
             $dashboardRoute = 'dashboard';
             if (Auth::user()->role == 'admin') $dashboardRoute = 'admin.dashboard';
-            elseif (Auth::user()->role == 'kepala_sekolah') $dashboardRoute = 'kepala-sekolah.dashboard';
+            elseif (Auth::user()->role == 'pimpinan') { $dashboardRoute = 'pimpinan.dashboard'; }
         @endphp
         <a href="{{ route($dashboardRoute) }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs($dashboardRoute) ? 'sidebar-active' : '' }}"> 
             {{-- (BARU) Ikon untuk Dashboard --}}
@@ -214,7 +214,7 @@
     @endif
 
     {{-- ======= ADMIN & KEPALA SEKOLAH ======= --}}
-    @if(in_array(Auth::user()->role, ['admin', 'kepala_sekolah']))
+    @if(in_array(Auth::user()->role, ['admin', 'pimpinan']))
         <hr class="border-gray-700 my-2" x-show="!sidebarMini" x-transition>
         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
 
@@ -313,8 +313,8 @@
                 <div class="flex items-center gap-3">
                     <img src="{{ asset('images/logo-sekolah.png') }}" class="h-9 w-9 rounded-md object-contain" alt="Logo"/>
                     <div>
-                        <div class="text-lg font-semibold leading-tight">SAG</div>
-                        <div class="text-xs text-gray-300 leading-tight">Sistem Absensi Guru</div>
+                        <div class="text-lg font-semibold leading-tight">PRESGO</div>
+                        <div class="text-xs text-gray-300 leading-tight">Presensi Guru Online</div>
                     </div>
                 </div>
                 <button @click="closeMobile()" class="p-2 rounded-md hover:bg-gray-700" aria-label="Close sidebar">
@@ -332,7 +332,7 @@
         @php
             $dashboardRoute = 'dashboard';
             if (Auth::user()->role == 'admin') $dashboardRoute = 'admin.dashboard';
-            elseif (Auth::user()->role == 'kepala_sekolah') $dashboardRoute = 'kepala-sekolah.dashboard';
+            elseif (Auth::user()->role == 'pimpinan') $dashboardRoute = 'pimpinan.dashboard';
         @endphp
         <a href="{{ route($dashboardRoute) }}" class="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-700 {{ request()->routeIs($dashboardRoute) ? 'sidebar-active' : '' }}"> 
             {{-- (BARU) Ikon untuk Dashboard --}}
@@ -410,7 +410,7 @@
     @endif
 
     {{-- ======= ADMIN & KEPALA SEKOLAH ======= --}}
-    @if(in_array(Auth::user()->role, ['admin', 'kepala_sekolah']))
+    @if(in_array(Auth::user()->role, ['admin', 'pimpinan']))
         <hr class="border-gray-700 my-2" x-show="!sidebarMini" x-transition>
         <li x-show="!sidebarMini" x-transition class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase">Laporan</li>
 

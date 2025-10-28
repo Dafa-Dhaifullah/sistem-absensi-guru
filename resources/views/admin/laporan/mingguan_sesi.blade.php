@@ -1,7 +1,7 @@
 <x-admin-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Laporan Rekapitulasi Bulanan (per Sesi)') }}
+            {{ __('Laporan Rekapitulasi Mingguan') }}
         </h2>
     </x-slot>
 
@@ -10,21 +10,15 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-medium mb-4">Filter Laporan</h3>
-                    <form action="{{ route('admin.laporan.bulanan.sesi') }}" method="GET">
+                    <form action="{{ route('admin.laporan.mingguan.sesi') }}" method="GET">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <x-input-label for="bulan" :value="__('Bulan')" />
-                                <select name="bulan" id="bulan" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    @for ($m = 1; $m <= 12; $m++)
-                                        <option value="{{ $m }}" {{ $bulan == $m ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::create()->month($m)->locale('id_ID')->isoFormat('MMMM') }}
-                                        </option>
-                                    @endfor
-                                </select>
+                                <x-input-label for="tanggal_mulai" :value="__('Tanggal Mulai')" />
+                                <x-text-input id="tanggal_mulai" class="block mt-1 w-full" type="date" name="tanggal_mulai" :value="$tanggalMulai" required />
                             </div>
                             <div>
-                                <x-input-label for="tahun" :value="__('Tahun')" />
-                                <x-text-input id="tahun" class="block mt-1 w-full" type="number" name="tahun" :value="$tahun" required />
+                                <x-input-label for="tanggal_selesai" :value="__('Tanggal Selesai')" />
+                                <x-text-input id="tanggal_selesai" class="block mt-1 w-full" type="date" name="tanggal_selesai" :value="$tanggalSelesai" required />
                             </div>
                             <div class="flex items-end">
                                 <x-primary-button type="submit">{{ __('Tampilkan') }}</x-primary-button>
@@ -35,21 +29,14 @@
             </div>
 
             <div class="mb-6">
-                <div class="sm:hidden">
-                    <label for="tabs" class="sr-only">Pilih tampilan</label>
-                    <select id="tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" onchange="window.location.href = this.value;">
-                        <option value="{{ route('admin.laporan.bulanan', request()->query()) }}">Tampilan Harian (Grid)</option>
-                        <option value="{{ route('admin.laporan.bulanan.sesi', request()->query()) }}" selected>Tampilan per Sesi (Ringkasan)</option>
-                    </select>
-                </div>
                 <div class="hidden sm:block">
                     <div class="border-b border-gray-200">
                         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                            <a href="{{ route('admin.laporan.bulanan', request()->query()) }}" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            <a href="{{ route('admin.laporan.mingguan', request()->query()) }}" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                                 Tampilan Harian 
                             </a>
-                            <a href="{{ route('admin.laporan.bulanan.sesi', request()->query()) }}" class="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" aria-current="page">
-                                Tampilan per Jadwal 
+                            <a href="{{ route('admin.laporan.mingguan.sesi', request()->query()) }}" class="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" aria-current="page">
+                                Tampilan per Jadwal
                             </a>
                         </nav>
                     </div>
@@ -58,9 +45,11 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <div class="mb-4 flex justify-end">
-                        <a href="{{ route('admin.laporan.export.bulanan-sesi', request()->query()) }}"
-                           class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">
+                            Menampilkan Laporan Sesi: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
+                        </h3>
+                        <a href="{{ route('admin.laporan.export.mingguan-sesi', request()->query()) }}"  class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
                         </a>
                     </div>
@@ -77,7 +66,7 @@
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Alpa</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Dinas Luar</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Kehadiran</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ketepatan waktu</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ketepatan Waktu</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -99,7 +88,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Belum ada data guru.</td></tr>
+                                    <tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">Belum ada data guru.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

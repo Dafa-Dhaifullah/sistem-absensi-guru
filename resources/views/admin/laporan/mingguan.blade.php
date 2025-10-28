@@ -7,6 +7,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
                     <h3 class="text-lg font-medium mb-4">Filter Laporan</h3>
@@ -27,6 +28,20 @@
                     </form>
                 </div>
             </div>
+            <div class="mb-6">
+    <div class="hidden sm:block">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <a href="{{ route('admin.laporan.mingguan', request()->query()) }}" class="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" aria-current="page">
+                    Tampilan Harian 
+                </a>
+                <a href="{{ route('admin.laporan.mingguan.sesi', request()->query()) }}" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Tampilan per Jadwal 
+                </a>
+            </nav>
+        </div>
+    </div>
+</div>
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
@@ -100,7 +115,7 @@ __
                                         @endphp
                                         <td class="px-2 py-3 text-center text-xs font-medium border-r bg-green-50">{{ $summary['totalHadir'] }}</td>
                                         <td class="px-2 py-3 text-center text-xs font-medium border-r bg-yellow-50">{{ $summary['totalSakit'] }}</td>
-                                        <td class_id"px-2 py-3 text-center text-xs font-medium border-r bg-blue-50">{{ $summary['totalIzin'] }}</td>
+                                        <td class="px-2 py-3 text-center text-xs font-medium border-r bg-blue-50">{{ $summary['totalIzin'] }}</td>
                                         <td class="px-2 py-3 text-center text-xs font-medium border-r bg-red-50">{{ $summary['totalAlpa'] }}</td>
                                         <td class="px-2 py-3 text-center text-xs font-medium bg-purple-50">{{ $summary['totalDL'] }}</td>
                                     </tr>

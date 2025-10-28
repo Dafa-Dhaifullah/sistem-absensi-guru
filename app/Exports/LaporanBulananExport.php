@@ -63,7 +63,7 @@ class LaporanBulananExport implements WithEvents
                 $sheet = $event->sheet->getDelegate();
 
                 // --- 1. HEADER KOMPLEKS ---
-                $sheet->mergeCells('C1:AF1')->setCellValue('C1', 'KETIDAKHADIRAN GURU');
+                $sheet->mergeCells('C1:AF1')->setCellValue('C1', 'KEHADIRAN GURU');
                 $sheet->mergeCells('C2:AF2')->setCellValue('C2', 'BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
                 $sheet->mergeCells('C3:AF3')->setCellValue('C3', 'TANGGAL');
                 $sheet->mergeCells('A1:A5')->setCellValue('A1', 'NO');

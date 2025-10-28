@@ -9,14 +9,14 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <p class="mb-4 text-sm text-gray-600">
-                        Daftar sesi pelajaran di mana guru melakukan absensi mandiri melewati batas toleransi keterlambatan (15 menit).
+                        Daftar Jadwal pelajaran di mana guru melakukan absensi mandiri melewati batas toleransi keterlambatan (15 menit).
                     </p>
                     <div class="overflow-x-auto border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Guru</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Sesi</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Kelas</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jam Absen</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Bukti Foto</th>
                                 </tr>
