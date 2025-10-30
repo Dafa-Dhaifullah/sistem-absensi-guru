@@ -34,7 +34,7 @@
                                         {{ Auth::id() == $pengguna->id ? 'disabled' : '' }}>
                                         
                                         <option value="admin" @if(old('role', $pengguna->role) == 'admin') selected @endif>Admin (TU)</option>
-                                        <option value="kepala_sekolah" @if(old('role', $pengguna->role) == 'pimpinan') selected @endif>Pimpinan</option>
+                                        <option value="pimpinan" @if(old('role', $pengguna->role) == 'pimpinan') selected @endif>Pimpinan</option>
                                         {{-- Opsi 'piket' dihapus dari sini karena guru piket adalah role 'guru' --}}
                                         <option value="guru" @if(old('role', $pengguna->role) == 'guru') selected @endif>Guru</option>
                                     </select>

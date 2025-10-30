@@ -61,7 +61,7 @@ class LaporanBulananExport implements WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-
+                $today = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
                 // --- 1. HEADER KOMPLEKS ---
                 $sheet->mergeCells('C1:AF1')->setCellValue('C1', 'KEHADIRAN GURU');
                 $sheet->mergeCells('C2:AF2')->setCellValue('C2', 'BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
@@ -82,43 +82,29 @@ class LaporanBulananExport implements WithEvents
                 foreach ($this->semuaGuru as $index => $guru) {
                     $sheet->setCellValue('A' . $row, $index + 1);
                     $sheet->setCellValue('B' . $row, $guru->name);
-
                     $totalHadir = 0; $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
 
                     for ($i = 1; $i <= $this->daysInMonth; $i++) {
                         $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
-                        $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i);
+                        $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i)->startOfDay();
                         $tanggalCek = $tanggal->toDateString();
                         
-                        $cellValue = '-'; // Default untuk non-hari kerja
+                        $cellValue = '-'; 
                         $isHariKerja = isset($this->hariKerjaEfektif[$guru->id]) && $this->hariKerjaEfektif[$guru->id]->contains($tanggalCek);
 
                         if ($isHariKerja) {
-                            $laporanPerHari = $guru->laporanHarian->where('tanggal', $tanggalCek);
+                            // ## PERBAIKAN: Gunakan ->where('tanggal', $tanggal) untuk membandingkan Objek Carbon ##
+                            $laporanPerHari = $guru->laporanHarian->where('tanggal', $tanggal);
                             
                             if ($laporanPerHari->isNotEmpty()) {
-                                if ($laporanPerHari->contains('status', 'Hadir')) {
-                                    $cellValue = 'H'; $totalHadir++;
-                                } elseif ($laporanPerHari->contains('status', 'DL')) {
-                                    $cellValue = 'DL'; $totalDL++;
-                                } elseif ($laporanPerHari->contains('status', 'Sakit')) {
-                                    $cellValue = 'S'; $totalSakit++;
-                                } elseif ($laporanPerHari->contains('status', 'Izin')) {
-                                    $cellValue = 'I'; $totalIzin++;
-                                } else {
-                                    $cellValue = 'A'; $totalAlpa++;
-                                }
+                                if ($laporanPerHari->contains('status', 'Hadir')) { $cellValue = 'H'; $totalHadir++; }
+                                elseif ($laporanPerHari->contains('status', 'DL')) { $cellValue = 'DL'; $totalDL++; }
+                                elseif ($laporanPerHari->contains('status', 'Sakit')) { $cellValue = 'S'; $totalSakit++; }
+                                elseif ($laporanPerHari->contains('status', 'Izin')) { $cellValue = 'I'; $totalIzin++; }
+                                else { $cellValue = 'A'; $totalAlpa++; }
                             } else {
-                                // ==========================================================
-                                // ## REVISI LOGIKA ALPA: Hanya tandai Alpa jika hari sudah lewat ##
-                                // ==========================================================
-                                if ($tanggal->isPast()) {
-                                    $cellValue = 'A'; 
-                                    $totalAlpa++;
-                                } else {
-                                    $cellValue = '-'; // Jika hari kerja tapi di masa depan
-                                }
-                                // ==========================================================
+                                if ($tanggal->isBefore($today)) { $cellValue = 'A'; $totalAlpa++; }
+                                else { $cellValue = '-'; }
                             }
                         }
                         $sheet->setCellValue($col . $row, $cellValue);
@@ -158,7 +144,7 @@ class LaporanBulananExport implements WithEvents
                 $sheet->setCellValue("{$iCol}4", 'I');
                 $sheet->setCellValue("{$aCol}4", 'A');
                 $sheet->setCellValue("{$dlCol}4", 'DL');
-                $sheet->setCellValue("{$jumlahCol}4", 'JML');
+                $sheet->setCellValue("{$jumlahCol}4", 'JML TDK HADIR');
                 $sheet->setCellValue("{$persenTidakHadirCol}4", '% Tdk Hadir');
                 $sheet->setCellValue("{$persenHadirCol}4", '% Hadir');
                 $sheet->mergeCells("{$sCol}4:{$sCol}5");
@@ -191,8 +177,7 @@ class LaporanBulananExport implements WithEvents
                     $sheet->getColumnDimension($col)->setWidth(10);
                 }
                 
-                // --- 6. PETUNJUK (DIHAPUS) ---
-                // Petunjuk untuk warna oranye dihapus.
+             
             },
         ];
     }

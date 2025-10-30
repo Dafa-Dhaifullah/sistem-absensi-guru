@@ -6,11 +6,13 @@ use App\Models\User;
 use App\Models\HariLibur;
 use App\Models\JadwalPelajaran;
 use App\Models\KalenderBlok;
+use Carbon\Carbon; // Import Carbon
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat; // Import NumberFormat
 
 class LaporanSesiMingguanExport implements WithEvents
 {
@@ -27,40 +29,75 @@ class LaporanSesiMingguanExport implements WithEvents
 
     private function getLaporanData()
     {
+        // --- 1. PENGATURAN TANGGAL & DATA AWAL ---
+        $awalMinggu = Carbon::parse($this->tanggalMulai)->startOfDay();
+        $akhirMinggu = Carbon::parse($this->tanggalSelesai)->startOfDay();
         $today = now('Asia/Jakarta')->startOfDay();
-        $tanggalRange = \Carbon\Carbon::parse($this->tanggalMulai)->locale('id_ID')->toPeriod(\Carbon\Carbon::parse($this->tanggalSelesai));
+        $tanggalRange = $awalMinggu->locale('id_ID')->toPeriod($akhirMinggu);
         
         $semuaGuru = User::where('role', 'guru')
-            ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) {
-                $query->whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai]);
+            ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) use ($awalMinggu, $akhirMinggu) {
+                $query->whereBetween('tanggal', [$awalMinggu, $akhirMinggu]);
             }])
             ->orderBy('name', 'asc')
             ->get();
         
-        $hariLibur = HariLibur::whereBetween('tanggal', [$this->tanggalMulai, $this->tanggalSelesai])
+        $hariLibur = HariLibur::whereBetween('tanggal', [$awalMinggu, $akhirMinggu])
             ->pluck('tanggal')
             ->map(fn($date) => $date->toDateString());
 
+        // --- OPTIMASI (N+1): Ambil data KalenderBlok 1x ---
+        $kalenderBlokMingguIni = KalenderBlok::where(function ($query) use ($awalMinggu, $akhirMinggu) {
+            $query->where('tanggal_mulai', '<=', $akhirMinggu)
+                  ->where('tanggal_selesai', '>=', $awalMinggu);
+        })->get();
+        // --- Akhir Optimasi ---
+
         $laporanPerSesi = collect();
 
+        // --- 2. LOOPING PER GURU ---
         foreach ($semuaGuru as $guru) {
             $totalSesiWajib = 0; $totalHadir = 0; $totalTepatWaktu = 0; $totalTerlambat = 0;
             $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
 
             $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
 
+            // --- 3. LOOPING PER HARI ---
             foreach ($tanggalRange as $tanggal) {
-                if ($tanggal->isFuture()) break;
+                $tanggal = $tanggal->startOfDay(); // Pastikan start of day
+
+                if ($tanggal->gt($today)) break;
                 
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
 
-                $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $tanggal)->whereDate('tanggal_selesai', '>=', $tanggal)->first()->tipe_minggu ?? 'Reguler';
+                // --- OPTIMASI: Cari tipe minggu dari koleksi ---
+                $kalenderBlokHariIni = $kalenderBlokMingguIni->firstWhere(function ($blok) use ($tanggal) {
+                    // Gunakan perbandingan Carbon yang kuat
+                    $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
+                    $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
+                    return $tanggal->gte($mulai) && $tanggal->lte($selesai);
+                });
+                $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
+                // --- Akhir Optimasi ---
+
+                // ==========================================================
+                // ## PERBAIKAN LOGIKA FILTER BLOK (str_contains) ##
+                // ==========================================================
+                $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
+                $jadwalMentahHariIni = $jadwalHariGuru->get($namaHari);
+
+                $jadwalUntukHariIni = $jadwalMentahHariIni->filter(function ($jadwal) use ($tipeMinggu, $nomorMinggu) {
+                    $tipeBlokJadwal = $jadwal->tipe_blok;
+                    if ($tipeBlokJadwal == 'Setiap Minggu') return true;
+                    if ($tipeMinggu == 'Reguler' && $tipeBlokJadwal == 'Reguler') return true;
+                    if ($nomorMinggu != 'Reguler' && str_contains($tipeBlokJadwal, $nomorMinggu)) return true;
+                    if ($tipeBlokJadwal == $tipeMinggu) return true;
+                    return false;
+                })->sortBy('jam_ke');
+                // ==========================================================
                 
-                $jadwalUntukHariIni = $jadwalHariGuru->get($namaHari)
-                    ->whereIn('tipe_blok', ['Setiap Minggu', $tipeMinggu])
-                    ->sortBy('jam_ke');
-                
+                // --- Logika Pengelompokan Blok ---
                 $tempBlock = null;
                 $jadwalBlok = collect();
                 foreach ($jadwalUntukHariIni as $jadwal) {
@@ -75,37 +112,54 @@ class LaporanSesiMingguanExport implements WithEvents
 
                 $totalSesiWajib += $jadwalBlok->count();
 
+                // --- 4. LOOPING PER BLOK (CEK KEHADIRAN) ---
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
-                    $laporan = $guru->laporanHarian->where('jadwal_pelajaran_id', $jadwalPertamaId)->first();
+                    
+                    // ==========================================================
+                    // ## PERBAIKAN BUG KRITIS ADA DI SINI ##
+                    // Tambahkan ->where('tanggal', $tanggal)
+                    // ==========================================================
+                    $laporan = $guru->laporanHarian
+                        ->where('jadwal_pelajaran_id', $jadwalPertamaId)
+                        ->where('tanggal', $tanggal) // Filter berdasarkan hari
+                        ->first();
+                        
                     if ($laporan) {
-                        if ($laporan->status == 'Hadir') {
-                            $totalHadir++;
-                            if ($laporan->status_keterlambatan == 'Tepat Waktu') $totalTepatWaktu++;
-                            if ($laporan->status_keterlambatan == 'Terlambat') $totalTerlambat++;
-                        } 
-                        elseif ($laporan->status == 'Sakit') $totalSakit++;
-                        elseif ($laporan->status == 'Izin') $totalIzin++;
-                        elseif ($laporan->status == 'DL') $totalDL++;
-                        else $totalAlpa++;
+                        switch ($laporan->status) {
+                            case 'Hadir':
+                                $totalHadir++;
+                                if ($laporan->status_keterlambatan == 'Tepat Waktu') $totalTepatWaktu++;
+                                if ($laporan->status_keterlambatan == 'Terlambat') $totalTerlambat++;
+                                break;
+                            case 'Sakit': $totalSakit++; break;
+                            case 'Izin': $totalIzin++; break;
+                            case 'DL': $totalDL++; break;
+                            default: $totalAlpa++; break;
+                        }
                     } else {
                         $totalAlpa++;
                     }
                 }
-            }
+            } // End looping per hari
             
-            $persentaseHadir = ($totalSesiWajib > 0) ? ($totalHadir / $totalSesiWajib) * 100 : 0;
-            $persentaseTepatWaktu = ($totalHadir > 0) ? ($totalTepatWaktu / $totalHadir) * 100 : 0;
+            // --- 5. KALKULASI PERSENTASE (UNTUK EXCEL) ---
+            $persentaseHadir = ($totalSesiWajib > 0) ? ($totalHadir / $totalSesiWajib) : 0;
+            $persentaseTepatWaktu = ($totalHadir > 0) ? ($totalTepatWaktu / $totalHadir) : 0;
 
             $laporanPerSesi->push([
-                'name' => $guru->name, 'totalSesiWajib' => $totalSesiWajib,
-                'totalHadir' => $totalHadir, 'totalTerlambat' => $totalTerlambat,
-                'totalSakit' => $totalSakit, 'totalIzin' => $totalIzin,
-                'totalAlpa' => $totalAlpa, 'totalDL' => $totalDL,
-                'persentaseHadir' => round($persentaseHadir, 2) . '%',
-                'persentaseTepatWaktu' => round($persentaseTepatWaktu, 2) . '%',
+                $guru->name,
+                $totalSesiWajib,
+                $totalHadir,
+                $totalTerlambat,
+                $totalSakit,
+                $totalIzin,
+                $totalAlpa,
+                $totalDL,
+                $persentaseHadir, // Simpan sebagai angka
+                $persentaseTepatWaktu // Simpan sebagai angka
             ]);
-        }
+        } // End looping per guru
         return $laporanPerSesi;
     }
 
@@ -121,7 +175,7 @@ class LaporanSesiMingguanExport implements WithEvents
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $sheet->mergeCells('A2:J2');
-                $sheet->setCellValue('A2', 'PERIODE: ' . \Carbon\Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . \Carbon\Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
+                $sheet->setCellValue('A2', 'PERIODE: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
                 $sheet->getStyle('A2')->getFont()->setItalic(true);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -132,14 +186,32 @@ class LaporanSesiMingguanExport implements WithEvents
                 $sheet->fromArray($headings, null, 'A4');
                 $sheet->getStyle('A4:J4')->getFont()->setBold(true);
                 $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
+                $sheet->getStyle('A4:J4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->fromArray($this->laporanData->toArray(), null, 'A5');
+                // --- 3. MENGISI DATA ---
+                if ($this->laporanData->isNotEmpty()) {
+                    $sheet->fromArray($this->laporanData->toArray(), null, 'A5');
+                    $lastRow = count($this->laporanData) + 4;
+                } else {
+                    $lastRow = 4;
+                }
 
-                $lastRow = count($this->laporanData) + 4;
-                $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getStyle("B4:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getStyle("A5:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle("I5:J{$lastRow}")->getFont()->setBold(true);
+                // --- 4. STYLING ---
+                if ($lastRow > 4) {
+                    $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                    $sheet->getStyle("B5:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle("A5:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                    $sheet->getStyle("I5:J{$lastRow}")->getFont()->setBold(true);
+
+                    // ==========================================================
+                    // ## PERBAIKAN FORMAT PERSENTASE ##
+                    // ==========================================================
+                    $sheet->getStyle("I5:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_PERCENTAGE_00);
+                    // ==========================================================
+
+                } else {
+                    $sheet->getStyle("A4:J4")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                }
                 
                 $sheet->getColumnDimension('A')->setAutoSize(true);
                 foreach (range('B', 'J') as $columnID) {
@@ -149,3 +221,4 @@ class LaporanSesiMingguanExport implements WithEvents
         ];
     }
 }
+

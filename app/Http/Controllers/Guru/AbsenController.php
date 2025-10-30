@@ -5,20 +5,25 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt;
+// use Illuminate\Support\Facades\Crypt; // Tidak diperlukan lagi
+// use Illuminate\Contracts\Encryption\DecryptException; // Tidak diperlukan lagi
 use App\Models\LaporanHarian;
 use App\Models\JadwalPelajaran;
 use App\Models\MasterJamPelajaran;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class AbsenController extends Controller
 {
     public function store(Request $request)
     {
-        // Validasi input sekarang menerima array
+        // 1. Validasi Input
         $validated = $request->validate([
             'qr_token' => 'required|string',
-            'foto_selfie' => 'required|image|max:2048',
+            'foto_selfie' => 'required|image|max:15360', 
             'jadwal_ids' => 'required|array',
             'jadwal_ids.*' => 'exists:jadwal_pelajaran,id',
         ]);
@@ -26,8 +31,10 @@ class AbsenController extends Controller
         $user = Auth::user();
         $today = now('Asia/Jakarta');
         
-        // Ambil semua objek jadwal dari array ID yang diterima
         $jadwals = JadwalPelajaran::find($validated['jadwal_ids']);
+        if($jadwals->isEmpty()) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Jadwal tidak valid.']);
+        }
         $jadwalPertama = $jadwals->first();
 
         // --- Validasi Keamanan & Logika ---
@@ -40,18 +47,40 @@ class AbsenController extends Controller
             }
         }
         
-        // Validasi QR Code (cocokkan dengan kelas dari jadwal pertama)
-        if (Crypt::decryptString($validated['qr_token']) !== $jadwalPertama->kelas) {
-            return redirect()->back()->withErrors(['foto_selfie' => 'QR Code tidak sesuai dengan kelas yang dijadwalkan.']);
+        // ==========================================================
+        // ## REVISI LOGIKA VALIDASI QR CODE ##
+        // ==========================================================
+        // Hapus try-catch dan Crypt::decryptString
+        // Ganti dengan perbandingan teks biasa
+        $qrKelas = $validated['qr_token'];
+        $jadwalKelas = $jadwalPertama->kelas;
+
+        if ($qrKelas !== $jadwalKelas) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: QR Code tidak sesuai dengan kelas yang dijadwalkan.']);
         }
+        // ==========================================================
 
         // --- Tentukan Status Keterlambatan (berdasarkan jam pertama) ---
         $masterJamPertama = MasterJamPelajaran::where('hari', $jadwalPertama->hari)->where('jam_ke', $jadwalPertama->jam_ke)->first();
+        if (!$masterJamPertama) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Master jam pelajaran tidak ditemukan.']);
+        }
         $batasToleransi = Carbon::parse($today->toDateString() . ' ' . $masterJamPertama->jam_mulai)->addMinutes(15);
         $statusKeterlambatan = ($today->isAfter($batasToleransi)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // --- Simpan Foto dan Laporan ---
-        $pathFoto = $request->file('foto_selfie')->store('public/selfies/' . $today->format('Y-m'));
+        // --- Logika Kompresi Gambar (Tidak berubah) ---
+        try {
+            $image = $request->file('foto_selfie');
+            $manager = new ImageManager(new Driver());
+            $processedImage = $manager->read($image);
+            $processedImage->scaleDown(width: 800);
+            $encodedImage = $processedImage->toJpeg(75);
+            $fileName = Str::uuid() . '.jpg';
+            $pathFoto = 'public/selfies/' . $today->format('Y-m') . '/' . $fileName;
+            Storage::put($pathFoto, (string) $encodedImage);
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['foto_selfie' => 'Gagal memproses gambar: ' . $e->getMessage()]);
+        }
         
         // LOOPING untuk menyimpan laporan untuk SETIAP jam di blok
         foreach ($jadwals as $jadwal) {

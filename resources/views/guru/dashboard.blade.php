@@ -6,54 +6,192 @@
     </x-slot>
 
     <!-- 
-        ==========================================================
-        == REVISI 1: Logika Alpine.js dipindahkan ke sini ==
-        ==========================================================
+    ======================================================================
+    == PUSAT KONTROL ALPINE.JS (x-data) ==
+    ======================================================================
+    Mengelola semua state: modal, step (qr/selfie), scanner, dan file.
     -->
     <div x-data="{
         modalOpen: false,
+        step: 'qr', // State untuk melacak langkah: 'qr' atau 'selfie'
         selectedJadwalIds: [],
+        qrToken: '',
+        scannerInstance: null,
+        fileName: '', // State untuk melacak nama file selfie
+
+        // Fungsi untuk membuka modal
         openModal(jadwalIds) {
             this.selectedJadwalIds = jadwalIds;
+            this.step = 'qr'; // Selalu reset ke langkah 'qr'
+            this.qrToken = '';
+            this.fileName = ''; // Reset nama file
             this.modalOpen = true;
-            // Tampilkan kembali scanner dan sembunyikan selfie section
-            document.getElementById('qr-scanner-section').classList.remove('hidden');
-            document.getElementById('selfie-section').classList.add('hidden');
-            // Beri jeda sedikit agar modal tampil, baru mulai scanner
-            setTimeout(() => startScanner(), 150);
+            // x-effect akan menangani start scanner
+        },
+
+        // Fungsi untuk menutup modal
+        closeModal() {
+            this.modalOpen = false;
+            // x-effect akan menangani stop scanner
+        },
+
+        // Fungsi untuk mengupdate nama file
+        updateFileName(event) {
+            if (event.target.files.length > 0) {
+                this.fileName = event.target.files[0].name;
+            } else {
+                this.fileName = '';
+            }
+        },
+
+        // Fungsi untuk menginisialisasi dan memulai scanner
+        initScanner() {
+            if (this.scannerInstance) {
+                try { this.scannerInstance.clear(); } catch (e) {}
+            }
+            
+            const alpineComponent = this;
+
+            const onScanSuccess = (decodedText, decodedResult) => {
+                alpineComponent.qrToken = decodedText;
+                alpineComponent.step = 'selfie'; // Ganti state ke 'selfie'
+                
+                if (alpineComponent.scannerInstance) {
+                    try { alpineComponent.scannerInstance.clear(); } catch (e) {}
+                    alpineComponent.scannerInstance = null;
+                }
+            };
+
+            const onScanFailure = (error) => {
+                const statusEl = document.getElementById('qr-reader-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Arahkan kamera ke QR Code...';
+                }
+            };
+
+            try {
+                this.scannerInstance = new Html5QrcodeScanner(
+                    'qr-reader', 
+                    { fps: 10, qrbox: {width: 250, height: 250} }, 
+                    false
+                );
+                this.scannerInstance.render(onScanSuccess, onScanFailure);
+            } catch (e) {
+                console.error('Gagal memulai scanner:', e);
+                const statusEl = document.getElementById('qr-reader-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Gagal memuat kamera. Segarkan halaman.';
+                }
+            }
+        },
+
+        // Fungsi untuk mengelola siklus hidup scanner (otomatis)
+        manageScannerLifecycle() {
+            if (this.modalOpen && this.step === 'qr') {
+                // Modal terbuka di langkah 'qr', mulai scanner
+                this.$nextTick(() => {
+                    if (document.getElementById('qr-reader')) {
+                        this.initScanner();
+                    }
+                });
+            } else if ((!this.modalOpen || this.step !== 'qr') && this.scannerInstance) {
+                // Modal tertutup ATAU pindah step, hentikan scanner
+                try { 
+                    this.scannerInstance.clear(); 
+                    this.scannerInstance = null;
+                } catch (e) {}
+            }
         }
     }">
 
-        <!-- Modal untuk Scan QR + Selfie -->
-        <div @keydown.escape.window="modalOpen = false" x-show="modalOpen" 
+        <!-- 
+        ======================================================================
+        == MODAL ABSENSI (QR + SELFIE) ==
+        ======================================================================
+        Dikelola oleh state 'modalOpen' dan 'step'.
+        -->
+        <div @keydown.escape.window="closeModal()" x-show="modalOpen" 
+             x-effect="manageScannerLifecycle()"
              class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" style="display: none;">
-            <div @click.away="modalOpen = false" class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
+            
+            <!-- Klik @click.away akan menutup modal -->
+            <div @click.away="closeModal()" class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
                 <form id="form-absen" action="{{ route('guru.absen.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
+                    
+                    <!-- Input untuk jadwal_ids (tidak berubah) -->
                     <template x-for="jadwalId in selectedJadwalIds" :key="jadwalId">
                         <input type="hidden" name="jadwal_ids[]" :value="jadwalId">
                     </template>
-                    <input type="hidden" name="qr_token" id="qr_token">
+                    
+                    <!-- Input token QR (terikat ke state) -->
+                    <input type="hidden" name="qr_token" id="qr_token" x-model="qrToken">
                     
                     <div class="p-6">
                         <h3 class="text-lg font-semibold text-gray-900">Form Absensi</h3>
-                        <div id="qr-scanner-section" class="mt-4 flex flex-col items-center">
+                        
+                        <!-- 
+                        == LANGKAH 1: SCANNER QR ==
+                        Tampil HANYA jika state step = 'qr'
+                        -->
+                        <div id="qr-scanner-section" x-show="step === 'qr'" class="mt-4 flex flex-col items-center">
                             <p class="text-sm text-gray-600 mb-2">Arahkan kamera ke QR Code di kelas.</p>
                             <div id="qr-reader" class="w-full max-w-sm aspect-square border-2 border-dashed rounded-lg"></div>
                             <p id="qr-reader-status" class="text-sm text-gray-500 mt-2 text-center h-5"></p>
                         </div>
-                        <div id="selfie-section" class="hidden mt-4">
+
+                        <!-- 
+                        == LANGKAH 2: AMBIL SELFIE ==
+                        Tampil HANYA jika state step = 'selfie'
+                        -->
+                        <div id="selfie-section" x-show="step === 'selfie'" class="mt-4">
+                            <!-- Pesan Sukses -->
                             <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                                 <p class="font-semibold text-blue-800">✔️ QR Code berhasil dipindai!</p>
                                 <p class="text-sm text-blue-700">Langkah terakhir, silakan ambil foto selfie Anda.</p>
                             </div>
+
+                            <!-- Tombol Ambil Foto Kustom -->
                             <div class="mt-6 max-w-md mx-auto">
                                 <x-input-label for="foto_selfie" :value="__('Ambil Foto Selfie')" class="mb-2"/>
-                                <input id="foto_selfie" name="foto_selfie" type="file" accept="image/*" capture="user" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition duration-150" required>
+
+                                <!-- Input file asli (disembunyikan) -->
+                                <input id="foto_selfie" name="foto_selfie" type="file" accept="image/*" capture="user" required
+                                       x-ref="fileInput" 
+                                       @change="updateFileName($event)"
+                                       style="display: none;">
+
+                                <!-- Tombol Kustom & Teks Status -->
+                                <div class="flex items-center space-x-3">
+                                    <!-- Tombol yang dilihat pengguna -->
+                                    <x-secondary-button type="button" @click.prevent="$refs.fileInput.click()">
+                                        <svg class="w-5 h-5 mr-2 -ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M2 6a2 2 0 012-2h1.172a2 2 0 011.414.586l.828.828A2 2 0 008.828 6H12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                                            <path d="M15 8a1 1 0 10-2 0v2a1 1 0 102 0V8zM3 10a1 1 0 011-1h2a1 1 0 110 2H4a1 1 0 01-1-1z" />
+                                        </svg>
+                                        Ambil Foto
+                                    </x-secondary-button>
+
+                                    <!-- Teks status nama file -->
+                                    <span
+          x-text="fileName || 'Belum ada foto.'"
+          class="text-sm text-gray-500 truncate"
+          :class="fileName ? 'text-green-600 font-semibold' : null">
+        </span>
+                                </div>
+                                
                                 <x-input-error :messages="$errors->get('foto_selfie')" class="mt-2" />
                             </div>
+                            
+                            
                             <div class="mt-6 text-center">
-                                <x-primary-button type="submit">{{ __('Kirim Absensi') }}</x-primary-button>
+                                
+                                <x-primary-button
+  type="submit"
+  x-bind:disabled="!fileName"
+  x-bind:class="!fileName ? 'opacity-50 cursor-not-allowed' : ''">
+  {{ __('Kirim Absensi') }}
+</x-primary-button>
                             </div>
                         </div>
                     </div>
@@ -61,6 +199,11 @@
             </div>
         </div>
 
+        <!-- 
+        ======================================================================
+        == KONTEN UTAMA HALAMAN (JADWAL) ==
+        ======================================================================
+        -->
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
@@ -89,6 +232,7 @@
                         <div class="mt-4 space-y-4">
                             @forelse ($jadwalBlok as $blok)
                                 @php
+                                  
                                     $jamMulai = $masterJamHariIni->get($blok['jam_pertama']);
                                     $jamSelesai = $masterJamHariIni->get($blok['jam_terakhir']);
                                     
@@ -101,16 +245,50 @@
                                     $sudahLewat = $sekarang->isAfter($waktuSelesai);
                                     
                                     $laporan = $laporanHariIni->get($blok['jadwal_ids'][0]);
+
+                                    
+                                    $bgColorClass = 'bg-gray-50'; // Default
+                                    if ($laporan) {
+                                        $bgColorClass = 'bg-green-50 border-green-200';
+                                    } elseif ($bisaAbsen) {
+                                        $bgColorClass = 'bg-blue-50 border-blue-200';
+                                    } elseif ($sudahLewat) {
+                                        $bgColorClass = 'bg-red-50 border-red-200';
+                                    }
+
+                                    
+                                    $jamText = 'Jam ' . $blok['jam_pertama'];
+                                    if ($blok['jam_pertama'] != $blok['jam_terakhir']) {
+                                        $jamText .= '-' . $blok['jam_terakhir'];
+                                    }
+
+                                    
+                                    $laporanAbsenText = ''; // Inisialisasi
+                                    if ($laporan && $laporan->jam_absen) {
+                                        $laporanAbsenText = '(' . $laporan->status_keterlambatan . ' pada ' . \Carbon\Carbon::parse($laporan->jam_absen)->format('H:i') . ')';
+                                    } elseif ($laporan) {
+                                        // Fallback jika jam absen null tapi laporan ada
+                                        $laporanAbsenText = '(' . $laporan->status_keterlambatan . ')';
+                                    }
+
+                          
+                                    $absenDibukaText = ''; // Inisialisasi
+                                    if (!$laporan && !$bisaAbsen && !$sudahLewat) {
+                                        $absenDibukaText = 'Absen dibuka pukul ' . $waktuBukaAbsen->format('H:i');
+                                    }
                                 @endphp
 
-                                <div class="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 
-                                    {{ $laporan ? 'bg-green-50 border-green-200' : ($bisaAbsen ? 'bg-blue-50 border-blue-200' : ($sudahLewat ? 'bg-red-50 border-red-200' : 'bg-gray-50')) }}">
+                                <!-- Kartu Jadwal Individual -->
+                                <!-- Cetak $bgColorClass yang sudah bersih di sini -->
+                                <div class="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 {{ $bgColorClass }}">
                                     
+                                    <!-- Info Jadwal (Kiri) -->
                                     <div class="flex-grow">
                                         <div class="flex items-center gap-4">
                                             <div class="text-center w-24 flex-shrink-0">
                                                 <div class="font-bold text-lg text-gray-800">
-                                                    Jam {{ $blok['jam_pertama'] }}{{ $blok['jam_pertama'] != $blok['jam_terakhir'] ? '-' . $blok['jam_terakhir'] : '' }}
+                                                    <!-- Cetak $jamText yang sudah bersih di sini -->
+                                                    {{ $jamText }}
                                                 </div>
                                                 <div class="text-xs text-gray-500">{{ $waktuMulai->format('H:i') }} - {{ $waktuSelesai->format('H:i') }}</div>
                                             </div>
@@ -121,17 +299,17 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Status/Tombol Absen (Kanan) -->
                                     <div class="flex-shrink-0 w-full md:w-auto text-center">
                                         @if ($laporan)
                                             <div class="text-sm">
                                                 <span class="font-bold text-green-700">Sudah Absen</span>
-                                                <div class="text-xs text-gray-500">({{ $laporan->status_keterlambatan }} pada {{ \Carbon\Carbon::parse($laporan->jam_absen)->format('H:i') }})</div>
+                                                <!-- Cetak variabel $laporanAbsenText yang sudah bersih -->
+                                                <div class="text-xs text-gray-500">{{ $laporanAbsenText }}</div>
                                             </div>
                                         @elseif ($bisaAbsen)
-                                            <!-- ========================================================== -->
-                                            <!-- == REVISI 2: Panggil fungsi openModal() == -->
-                                            <!-- ========================================================== -->
-                                            <button @click="openModal({{ json_encode($blok['jadwal_ids']) }})" class="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 text-sm">
+                                          
+                                            <button type="button" @click="openModal(@json($blok['jadwal_ids']))" class="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 text-sm">
                                                 Absen Masuk Kelas
                                             </button>
                                         @elseif ($sudahLewat)
@@ -140,7 +318,8 @@
                                             </div>
                                         @else
                                             <div class="text-sm text-gray-500">
-                                                Absen dibuka pukul {{ $waktuBukaAbsen->format('H:i') }}
+                                                <!-- Cetak variabel $absenDibukaText yang sudah bersih -->
+                                                {{ $absenDibukaText }}
                                             </div>
                                         @endif
                                     </div>
@@ -153,49 +332,19 @@
                         </div>
                     </div>
                 </div>
+                <!-- Akhir Kartu Jadwal -->
 
-                {{-- ... Sisa kode (Kartu Info Piket) ... --}}
             </div>
         </div>
     </div>
     
-    <!-- ========================================================== -->
-    <!-- == REVISI 3: Sederhanakan Skrip == -->
-    <!-- ========================================================== -->
+    <!-- Impor library scanner (Tetap dibutuhkan) -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script>
-        // Letakkan variabel scanner di scope global agar bisa diakses
-        let html5QrcodeScanner;
-
-        function startScanner() {
-            // Hentikan scanner lama jika ada untuk mencegah error
-            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-                html5QrcodeScanner.clear();
-            }
-            
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "qr-reader", 
-                { fps: 10, qrbox: {width: 250, height: 250} }, 
-                false
-            );
-            
-            const statusElement = document.getElementById('qr-reader-status');
-            const selfieSection = document.getElementById('selfie-section');
-            const qrTokenInput = document.getElementById('qr_token');
-
-            function onScanSuccess(decodedText, decodedResult) {
-                html5QrcodeScanner.clear();
-                qrTokenInput.value = decodedText;
-                document.getElementById('qr-scanner-section').classList.add('hidden');
-                selfieSection.classList.remove('hidden');
-            }
-
-            function onScanFailure(error) {
-                statusElement.textContent = 'Arahkan kamera ke QR Code...';
-            }
-            
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        }
-    </script>
+    
+    <!-- 
+      Tidak ada lagi <script> global. 
+      Semua logika sudah ada di dalam x-data di atas.
+    -->
+    
 </x-teacher-layout>
 

@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\JadwalPelajaran;
 use App\Models\HariLibur;
 use App\Models\KalenderBlok;
-use Maatwebsite\Excel\Concerns\FromCollection; // <-- REVISI: Ganti FromQuery
+use Maatwebsite\Excel\Concerns\FromCollection; 
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Illuminate\Support\Carbon; // Import Carbon
 
 class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
@@ -37,32 +38,69 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
     */
     public function collection()
     {
-        // REVISI: Logika ini SAMA PERSIS dengan di LaporanController@individu
+        // REVISI: Logika ini disamakan dengan LaporanController@individu
         $guruTerpilih = User::findOrFail($this->guruId);
-        $tanggalMulai = \Illuminate\Support\Carbon::parse($this->tanggalMulai);
-        $tanggalSelesai = \Illuminate\Support\Carbon::parse($this->tanggalSelesai);
+        $tanggalMulai = Carbon::parse($this->tanggalMulai);
+        $tanggalSelesai = Carbon::parse($this->tanggalSelesai);
         $today = now('Asia/Jakarta')->startOfDay();
 
         $laporanTersimpan = LaporanHarian::where('user_id', $this->guruId)
             ->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
             ->with('piket')
             ->get()
-            ->keyBy('jadwal_pelajaran_id');
+            ->keyBy(function ($item) {
+                return $item->tanggal->toDateString() . '_' . $item->jadwal_pelajaran_id;
+            });
 
         $jadwalGuru = $guruTerpilih->jadwalPelajaran->groupBy('hari');
         $hariLibur = HariLibur::whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
             ->pluck('tanggal')->map(fn($date) => $date->toDateString());
         
+        // ==========================================================
+        // ## PERBAIKAN N+1 QUERY ##
+        // ==========================================================
+        $kalenderBlokPeriodeIni = KalenderBlok::where(function ($query) use ($tanggalMulai, $tanggalSelesai) {
+            $query->where('tanggal_mulai', '<=', $tanggalSelesai)
+                  ->where('tanggal_selesai', '>=', $tanggalMulai);
+        })->get();
+        // ==========================================================
+            
         $laporanFinal = collect();
 
-        foreach (\Illuminate\Support\Carbon::parse($tanggalMulai)->toPeriod($tanggalSelesai) as $tanggal) {
+        foreach (Carbon::parse($tanggalMulai)->toPeriod($tanggalSelesai) as $tanggal) {
             if ($tanggal->isFuture()) break;
             $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
             if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalGuru->has($namaHari)) {
                 continue;
             }
-            $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $tanggal)->whereDate('tanggal_selesai', '>=', $tanggal)->first()->tipe_minggu ?? 'Reguler';
-            $jadwalHariIni = $jadwalGuru->get($namaHari)->whereIn('tipe_blok', ['Setiap Minggu', $tipeMinggu])->sortBy('jam_ke');
+
+            // ==========================================================
+            // ## PERBAIKAN LOGIKA PENCARIAN BLOK (dari N+1) ##
+            // ==========================================================
+            $kalenderBlokHariIni = $kalenderBlokPeriodeIni->firstWhere(function ($blok) use ($tanggal) {
+                $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
+                $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
+                return $tanggal->gte($mulai) && $tanggal->lte($selesai);
+            });
+            $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
+            // ==========================================================
+            
+            // ==========================================================
+            // ## PERBAIKAN LOGIKA FILTER BLOK (str_contains) ##
+            // ==========================================================
+            $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
+            $jadwalMentahHariIni = $jadwalGuru->get($namaHari);
+
+            $jadwalHariIni = $jadwalMentahHariIni->filter(function ($jadwal) use ($tipeMinggu, $nomorMinggu) {
+                $tipeBlokJadwal = $jadwal->tipe_blok;
+                if ($tipeBlokJadwal == 'Setiap Minggu') return true;
+                if ($tipeMinggu == 'Reguler' && $tipeBlokJadwal == 'Reguler') return true;
+                if ($nomorMinggu != 'Reguler' && str_contains($tipeBlokJadwal, $nomorMinggu)) return true;
+                if ($tipeBlokJadwal == $tipeMinggu) return true;
+                return false;
+            })->sortBy('jam_ke');
+            // ==========================================================
+
 
             // --- LOGIKA PENGELOMPOKKAN BLOK ---
             $tempBlock = null;
@@ -80,7 +118,8 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
 
             foreach ($jadwalBlok as $blok) {
                 $jadwalPertamaId = $blok['jadwal_ids'][0];
-                $laporan = $laporanTersimpan->get($jadwalPertamaId);
+                $key = $tanggal->toDateString() . '_' . $jadwalPertamaId;
+                $laporan = $laporanTersimpan->get($key);
 
                 $logSesi = new \stdClass();
                 $logSesi->tanggal = $tanggal->toDateString();
@@ -107,7 +146,7 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
         return [
             ['Laporan Kehadiran Individu (per Sesi Mengajar)'],
             ['Guru: ' . $this->namaGuru],
-            ['Periode: ' . \Carbon\Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . \Carbon\Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y')],
+            ['Periode: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y')],
             [], 
             [
                 'Tanggal',
@@ -146,13 +185,13 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
         }
 
         return [
-            \Carbon\Carbon::parse($laporan->tanggal)->isoFormat('D MMMM YYYY'),
-            \Carbon\Carbon::parse($laporan->tanggal)->locale('id_ID')->isoFormat('dddd'),
+            Carbon::parse($laporan->tanggal)->isoFormat('D MMMM YYYY'),
+            Carbon::parse($laporan->tanggal)->locale('id_ID')->isoFormat('dddd'),
             'Jam ' . $laporan->jam_pertama . ($laporan->jam_pertama != $laporan->jam_terakhir ? '-' . $laporan->jam_terakhir : ''),
             $laporan->kelas,
             $status,
             $keterangan,
-            $laporan->jam_absen ? \Carbon\Carbon::parse($laporan->jam_absen)->format('H:i:s') : '-',
+            $laporan->jam_absen ? Carbon::parse($laporan->jam_absen)->format('H:i:s') : '-',
             $diabsenOleh,
             $laporan->keterangan_piket,
         ];

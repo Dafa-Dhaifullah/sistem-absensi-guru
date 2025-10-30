@@ -9,34 +9,34 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <p class="mb-4 text-sm text-gray-600">
-                        Daftar Jadwal pelajaran di mana guru melakukan absensi mandiri melewati batas toleransi keterlambatan (15 menit).
+                        Daftar jadwal pelajaran di mana guru melakukan absensi mandiri melewati batas toleransi keterlambatan (15 menit).
                     </p>
                     <div class="overflow-x-auto border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Guru</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Kelas</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Mengajar</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jam Absen</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Bukti Foto</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($laporanTerlambat as $laporan)
+                                @forelse ($laporanTerlambat as $log)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $laporan->user->name ?? 'N/A' }}
+                                            {{ $log->laporan->user->name ?? 'N/A' }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            Jam ke-{{ $laporan->jadwalPelajaran->jam_ke ?? '?' }}
-                                            ({{ $laporan->jadwalPelajaran->kelas ?? 'N/A' }})
+                                            Jam {{ $log->jam_pertama }}{{ $log->jam_pertama != $log->jam_terakhir ? '-' . $log->jam_terakhir : '' }}
+                                            <span class="font-semibold text-gray-900"> ({{ $log->kelas }})</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                            {{ \Carbon\Carbon::parse($laporan->jam_absen)->format('H:i:s') }}
+                                            {{ \Carbon\Carbon::parse($log->laporan->jam_absen)->format('H:i:s') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                            @if ($laporan->foto_selfie_path)
-                                                <a href="{{ Illuminate\Support\Facades\Storage::url($laporan->foto_selfie_path) }}" target="_blank" class="text-blue-600 hover:underline">
+                                        <td class="px-6 py-4 whitespace-nowrawhitespace-nowrap text-sm text-center">
+                                            @if ($log->laporan->foto_selfie_path)
+                                                <a href="{{ Illuminate\Support\Facades\Storage::url($log->laporan->foto_selfie_path) }}" target="_blank" class="text-blue-600 hover:underline">
                                                     Lihat Foto
                                                 </a>
                                             @else

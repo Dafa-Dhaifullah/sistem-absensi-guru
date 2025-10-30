@@ -26,7 +26,7 @@
                         <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
                             <li>Download template Excel yang sudah disediakan.</li>
                             <li>Isi data sesuai format. Pastikan nama header tidak diubah.</li>
-                            <li>Kolom **nip_guru** atau **username_guru** wajib diisi. Prioritaskan NIP jika ada.</li>
+                            <li>Kolom **username_guru** wajib diisi.</li>
                             <li>Untuk **jam_ke** yang lebih dari satu jam (misal: jam ke 1 dan 2), tulis dengan koma tanpa spasi: `1,2`.</li>
                             <li>Nilai **hari** harus: `Senin`, `Selasa`, `Rabu`, `Kamis`, `Jumat`, atau `Sabtu`.</li>
                             <li>Nilai **tipe_blok** harus: `Setiap Minggu`, `Hanya Minggu 1`, atau `Hanya Minggu 2`.</li>

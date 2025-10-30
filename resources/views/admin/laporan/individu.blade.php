@@ -1,7 +1,7 @@
 <x-admin-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Laporan Individu Guru (per Sesi Pelajaran)') }}
+            {{ __('Laporan Individu Guru (per Jadwal Pelajaran)') }}
         </h2>
     </x-slot>
 

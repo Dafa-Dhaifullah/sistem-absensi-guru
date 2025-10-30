@@ -36,7 +36,14 @@
             </div>
 
             <!-- 2. Navigasi Tampilan -->
-            <div class="mb-6">
+           <div class="mb-6">
+                <div class="sm:hidden">
+                    <label for="tabs" class="sr-only">Pilih tampilan</label>
+                    <select id="tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" onchange="window.location.href = this.value;">
+                        <option value="{{ route('admin.laporan.bulanan', request()->query()) }}" selected>Tampilan Harian (Grid)</option>
+                        <option value="{{ route('admin.laporan.bulanan.sesi', request()->query()) }}">Tampilan per Sesi (Ringkasan)</option>
+                    </select>
+                </div>
                 <div class="hidden sm:block">
                     <div class="border-b border-gray-200">
                         <nav class="-mb-px flex space-x-8" aria-label="Tabs">

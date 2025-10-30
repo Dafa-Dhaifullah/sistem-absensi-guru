@@ -8,6 +8,8 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Illuminate\Support\Collection;
+use Carbon\Carbon; // Impor Carbon
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate; // Impor Coordinate
 
 class LaporanMingguanExport implements WithEvents
 {
@@ -34,6 +36,7 @@ class LaporanMingguanExport implements WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+                $today = Carbon::now('Asia/Jakarta')->startOfDay();
                 $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
 
                 // --- 1. JUDUL LAPORAN ---
@@ -43,7 +46,7 @@ class LaporanMingguanExport implements WithEvents
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $sheet->mergeCells('A2:H2');
-                $sheet->setCellValue('A2', 'PERIODE: ' . \Carbon\Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . \Carbon\Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
+                $sheet->setCellValue('A2', 'PERIODE: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
                 $sheet->getStyle('A2')->getFont()->setItalic(true);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -56,62 +59,114 @@ class LaporanMingguanExport implements WithEvents
                 $sheet->setCellValue('A7', 'Nama Guru');
                 $colIndex = 2; // Mulai dari B
                 foreach ($this->tanggalRange as $tanggal) {
-                    $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                    $col = Coordinate::stringFromColumnIndex($colIndex);
                     $sheet->setCellValue($col . '7', $tanggal->isoFormat('ddd, D'));
                     $colIndex++;
                 }
                 
                 // --- 4. HEADER SUMMARY ---
-                $hCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-                $sCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
-                $iCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 2);
-                $aCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 3);
-                $dlCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 4);
+                $hCol = Coordinate::stringFromColumnIndex($colIndex);
+                $sCol = Coordinate::stringFromColumnIndex($colIndex + 1);
+                $iCol = Coordinate::stringFromColumnIndex($colIndex + 2);
+                $aCol = Coordinate::stringFromColumnIndex($colIndex + 3);
+                $dlCol = Coordinate::stringFromColumnIndex($colIndex + 4);
                 $sheet->setCellValue("{$hCol}7", 'H');
                 $sheet->setCellValue("{$sCol}7", 'S');
                 $sheet->setCellValue("{$iCol}7", 'I');
                 $sheet->setCellValue("{$aCol}7", 'A');
                 $sheet->setCellValue("{$dlCol}7", 'DL');
 
-                // --- 5. ISI DATA ---
+                // --- 5. ISI DATA (BAGIAN YANG DIPERBAIKI) ---
                 $rowIndex = 8;
-                $summaryKeys = array_keys($this->summaryTotal); // Ambil semua User ID
-                
+                // $summaryKeys = array_keys($this->summaryTotal); // <-- DIHAPUS: Ini sumber masalahnya
+
+                // Kita loop $laporanHarianTeringkas, yang kita tahu urutannya
+                // SAMA DENGAN $this->semuaGuru (keduanya di-order by name)
                 foreach ($this->laporanHarianTeringkas as $index => $laporan) {
+                    
+                    // AMBIL ID GURU YANG BENAR:
+                    // Gunakan $index untuk mengambil guru dari $this->semuaGuru
+                    $guru = $this->semuaGuru->get($index);
+
+                    // Safety check jika terjadi ketidakcocokan (seharusnya tidak)
+                    if (!$guru) {
+                        $rowIndex++;
+                        continue;
+                    }
+
+                    // $laporan['name'] juga bisa diganti $guru->name
                     $sheet->setCellValue('A' . $rowIndex, $laporan['name']);
                     
                     $colIndex = 2;
                     foreach ($this->tanggalRange as $tanggal) {
-                        $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                        $col = Coordinate::stringFromColumnIndex($colIndex);
                         $status = $laporan['dataHarian'][$tanggal->toDateString()];
                         $sheet->setCellValue($col . $rowIndex, $status);
                         $colIndex++;
                     }
                     
-                    // Isi Summary
-                    $currentKey = $summaryKeys[$index];
-                    $summary = $this->summaryTotal[$currentKey];
+                    // --- PERBAIKAN LOGIKA SUMMARY ---
+                    // Gunakan $guru->id sebagai kunci yang BENAR
+                    $currentKey = $guru->id; 
                     
-                    $sheet->setCellValue("{$hCol}{$rowIndex}", $summary['totalHadir'] ?: '0');
-                    $sheet->setCellValue("{$sCol}{$rowIndex}", $summary['totalSakit'] ?: '0');
-                    $sheet->setCellValue("{$iCol}{$rowIndex}", $summary['totalIzin'] ?: '0');
-                    $sheet->setCellValue("{$aCol}{$rowIndex}", $summary['totalAlpa'] ?: '0');
-                    $sheet->setCellValue("{$dlCol}{$rowIndex}", $summary['totalDL'] ?: '0');
+                    // Pastikan data summary ada untuk guru ini
+                    if (isset($this->summaryTotal[$currentKey])) {
+                        $summary = $this->summaryTotal[$currentKey];
+                        
+                        $sheet->setCellValue("{$hCol}{$rowIndex}", $summary['totalHadir'] ?: '0');
+                        $sheet->setCellValue("{$sCol}{$rowIndex}", $summary['totalSakit'] ?: '0');
+                        $sheet->setCellValue("{$iCol}{$rowIndex}", $summary['totalIzin'] ?: '0');
+                        $sheet->setCellValue("{$aCol}{$rowIndex}", $summary['totalAlpa'] ?: '0');
+                        $sheet->setCellValue("{$dlCol}{$rowIndex}", $summary['totalDL'] ?: '0');
+                    } else {
+                        // Fallback jika tidak ada data summary
+                        $sheet->setCellValue("{$hCol}{$rowIndex}", '0');
+                        $sheet->setCellValue("{$sCol}{$rowIndex}", '0');
+                        $sheet->setCellValue("{$iCol}{$rowIndex}", '0');
+                        $sheet->setCellValue("{$aCol}{$rowIndex}", '0');
+                        $sheet->setCellValue("{$dlCol}{$rowIndex}", '0');
+                    }
                     
                     $rowIndex++;
                 }
 
                 // --- 6. STYLING ---
                 $lastCol = $dlCol;
-                $lastRow = count($this->laporanHarianTeringkas) + 7;
-                if(count($this->laporanHarianTeringkas) == 0) $lastRow = 8; // Pengaman jika data kosong
+                // Gunakan $rowIndex (yang sudah di-increment) dikurangi 1 sebagai baris terakhir
+                $lastRow = $rowIndex - 1; 
+                
+                if ($lastRow < 8) { // Pengaman jika data kosong
+                   $lastRow = 7; 
+                }
                 
                 $sheet->getStyle("A7:{$lastCol}{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 $sheet->getStyle("A7:{$lastCol}7")->getFont()->setBold(true);
+                $sheet->getStyle("A7:{$lastCol}7")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED'); // Latar header
                 $sheet->getStyle("A7:{$lastCol}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle("A7:{$lastCol}{$lastRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-                $sheet->getStyle("A8:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                
+                // Pastikan $lastRow > 7 sebelum menerapkan style ke data (baris 8 dst.)
+                if ($lastRow > 7) {
+                    $sheet->getStyle("A8:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                }
+                
                 $sheet->getColumnDimension('A')->setAutoSize(true);
+                
+                // Set AutoSize untuk kolom summary (H, S, I, A, DL)
+                $sheet->getColumnDimension($hCol)->setAutoSize(true);
+                $sheet->getColumnDimension($sCol)->setAutoSize(true);
+                $sheet->getColumnDimension($iCol)->setAutoSize(true);
+                $sheet->getColumnDimension($aCol)->setAutoSize(true);
+                $sheet->getColumnDimension($dlCol)->setAutoSize(true);
+                
+                // Set lebar spesifik untuk kolom tanggal (agar tidak terlalu lebar)
+                $colIndex = 2; // Mulai dari B
+                foreach ($this->tanggalRange as $tanggal) {
+                    $col = Coordinate::stringFromColumnIndex($colIndex);
+                    $sheet->getColumnDimension($col)->setWidth(8); // Lebar 8
+                    $colIndex++;
+                }
+
             },
         ];
     }

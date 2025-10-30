@@ -96,17 +96,55 @@ class DashboardController extends Controller
         }
 
         // --- 3. LOGIKA NOTIFIKASI PERINGATAN (PER HARI, TIDAK BERUBAH) ---
-        $statusTidakHadir = ['Sakit', 'Izin', 'Alpa'];
-        $batasAbsen = 4;
-        $guruWarning = User::where('role', 'guru')
-            ->withCount(['laporanHarian as total_tidak_hadir' => function ($query) use ($statusTidakHadir) {
-                $query->whereIn('status', $statusTidakHadir)
-                      ->whereMonth('tanggal', now()->month)
-                      ->whereYear('tanggal', now()->year)
-                      ->select(DB::raw('COUNT(DISTINCT DATE(tanggal))')); // Hitung hari unik
+       $batasAbsen = 4;
+        $bulanIni = $today->month;
+        $tahunIni = $today->year;
+
+        $semuaGuru = User::where('role', 'guru')
+            ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) use ($bulanIni, $tahunIni) {
+                $query->whereMonth('tanggal', $bulanIni)->whereYear('tanggal', $tahunIni);
             }])
-            ->having('total_tidak_hadir', '>=', $batasAbsen)
             ->get();
+        
+        $hariLibur = HariLibur::whereMonth('tanggal', $bulanIni)
+            ->whereYear('tanggal', $tahunIni)
+            ->pluck('tanggal')
+            ->map(fn($date) => $date->toDateString());
+            
+        $guruWarning = collect();
+
+        foreach ($semuaGuru as $guru) {
+            $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
+            $laporanGuru = $guru->laporanHarian;
+            $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0;
+
+            for ($i = 1; $i <= $today->day; $i++) {
+                $tanggal = Carbon::create($tahunIni, $bulanIni, $i)->startOfDay();
+                $tanggalCek = $tanggal->toDateString();
+                $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+
+                if ($hariLibur->contains($tanggalCek) || !$jadwalHariGuru->has($namaHari)) continue;
+                
+                $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $tanggal)->whereDate('tanggal_selesai', '>=', $tanggal)->first()->tipe_minggu ?? 'Reguler';
+                $adaJadwalBlok = $jadwalHariGuru->get($namaHari)->whereIn('tipe_blok', ['Setiap Minggu', $tipeMinggu])->isNotEmpty();
+
+                if ($adaJadwalBlok) {
+                    $laporanPerHari = $laporanGuru->where('tanggal', $tanggalCek);
+                    if ($laporanPerHari->isNotEmpty()) {
+                        if ($laporanPerHari->contains('status', 'Sakit')) $totalSakit++;
+                        elseif ($laporanPerHari->contains('status', 'Izin')) $totalIzin++;
+                    } else {
+                        $totalAlpa++;
+                    }
+                }
+            }
+            
+            $totalTidakHadir = $totalSakit + $totalIzin + $totalAlpa;
+            if ($totalTidakHadir >= $batasAbsen) {
+                $guru->total_tidak_hadir = $totalTidakHadir;
+                $guruWarning->push($guru);
+            }
+        }
 
         return view('pimpinan.dashboard', [
             'jamKeSekarang' => $jamKeSekarang,
