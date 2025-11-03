@@ -58,9 +58,11 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <div class="mb-4 flex justify-end">
-                        <a href="{{ route('admin.laporan.export.bulanan-sesi', request()->query()) }}"
-                           class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">
+                            Menampilkan Laporan Per Jadwal: {{ \Carbon\Carbon::create()->month($bulan)->locale('id_ID')->isoFormat('MMMM') }} {{ $tahun }}
+                        </h3>
+                        <a href="{{ route('admin.laporan.export.bulanan', ['bulan' => $bulan, 'tahun' => $tahun]) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
                         </a>
                     </div>

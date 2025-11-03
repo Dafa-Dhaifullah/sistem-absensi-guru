@@ -15,9 +15,9 @@ class DashboardAdminController extends Controller
 {
     public function index()
 {
-    // --- DATA STATISTIK (Tidak berubah) ---
+    
     $jumlahGuru = \App\Models\User::whereIn('role', ['guru', 'piket'])->count(); 
-    $jumlahAkunPiket = \App\Models\User::where('role', 'piket')->count();
+    $jumlahAkunPiket = \App\Models\JadwalPiket::select('user_id')->distinct()->count();
     $jumlahJadwal = \App\Models\JadwalPelajaran::count();
 
     $batasAbsen = 4;
