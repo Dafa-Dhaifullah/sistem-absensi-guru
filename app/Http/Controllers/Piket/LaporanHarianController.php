@@ -29,34 +29,48 @@ class LaporanHarianController extends Controller
         DB::beginTransaction();
         try {
             foreach ($statusOverrides as $firstJadwalId => $status) {
-                if (empty($status)) continue; // Lewati jika tidak ada status override dipilih
+                if (empty($status)) continue; 
 
                 $jadwalPertama = JadwalPelajaran::findOrFail($firstJadwalId);
                 $keterangan = $request->input('keterangan_piket.' . $firstJadwalId);
                 
-                // --- Logika baru untuk menemukan semua jadwal dalam satu blok ---
-                // Asumsi blok adalah jam berurutan di kelas yang sama oleh guru yang sama
+                // --- Logika untuk menemukan semua jadwal dalam satu blok ---
                 $jadwalIdsInBlock = JadwalPelajaran::where('user_id', $jadwalPertama->user_id)
                     ->where('kelas', $jadwalPertama->kelas)
                     ->where('hari', $jadwalPertama->hari)
                     ->where('tipe_blok', $jadwalPertama->tipe_blok)
                     ->where('jam_ke', '>=', $jadwalPertama->jam_ke)
                     ->orderBy('jam_ke', 'asc')
-                    ->pluck('id');
-                
-                // Kumpulkan ID jadwal yang berurutan
+                    ->pluck('id', 'jam_ke');
+
                 $blokIds = [];
                 $lastJam = $jadwalPertama->jam_ke - 1;
-                foreach($jadwalIdsInBlock as $jadwalId) {
-                    $currentJadwal = JadwalPelajaran::find($jadwalId); // Ambil data jam_ke
-                    if ($currentJadwal->jam_ke == $lastJam + 1) {
-                        $blokIds[] = $currentJadwal->id;
-                        $lastJam = $currentJadwal->jam_ke;
+                foreach($jadwalIdsInBlock as $jam => $id) {
+                    if ($jam == $lastJam + 1) {
+                        $blokIds[] = $id;
+                        $lastJam = $jam;
                     } else {
-                        break; // Berhenti jika jam tidak berurutan
+                        break; 
                     }
                 }
                 // --- Akhir logika blok ---
+
+                $laporanPertama = LaporanHarian::where('jadwal_pelajaran_id', $firstJadwalId)->first();
+                $statusLama = $laporanPertama->status ?? 'Belum Absen';
+
+                // ==========================================================
+                // ## REVISI: LOG HANYA DIBUAT SEKALI PER BLOK ##
+                // ==========================================================
+                // Catat log (hanya jika status berubah)
+                if ($statusLama !== $status) {
+                    OverrideLog::create([
+                        'piket_user_id' => auth()->id(),
+                        'jadwal_pelajaran_id' => $firstJadwalId, // Simpan ID jadwal pertama sebagai referensi
+                        'status_lama' => $statusLama,
+                        'status_baru' => $status,
+                        'keterangan' => $keterangan,
+                    ]);
+                }
 
                 // Proses setiap jadwal dalam blok
                 foreach ($blokIds as $jadwalId) {
@@ -65,23 +79,11 @@ class LaporanHarianController extends Controller
                         'jadwal_pelajaran_id' => $jadwalId
                     ]);
                     
-                    // Keamanan: Jangan override jika guru sudah absen mandiri
                     if ($laporan->exists && $laporan->status === 'Hadir' && $laporan->diabsen_oleh == $laporan->user_id) {
                         continue;
                     }
                     
                     $jadwalTerkait = JadwalPelajaran::find($jadwalId);
-
-                    // Catat log override (hanya jika status berubah)
-                    if ($laporan->status !== $status) {
-                        OverrideLog::create([
-                            'piket_user_id' => auth()->id(),
-                            'jadwal_pelajaran_id' => $jadwalId,
-                            'status_lama' => $laporan->status ?? 'Belum Absen',
-                            'status_baru' => $status,
-                            'keterangan' => "Override: " . $keterangan,
-                        ]);
-                    }
 
                     // Simpan atau update record absensi
                     $laporan->fill([
@@ -97,18 +99,15 @@ class LaporanHarianController extends Controller
             // Simpan Logbook
             LogbookPiket::updateOrCreate(
                 ['tanggal' => $today->toDateString()],
-                [
-                    'kejadian_penting' => $request->kejadian_penting,
-                    'tindak_lanjut' => $request->tindak_lanjut,
-                ]
+                ['kejadian_penting' => $request->kejadian_penting, 'tindak_lanjut' => $request->tindak_lanjut]
             );
             
-            DB::commit(); // Simpan semua perubahan jika berhasil
+            DB::commit();
             
             return redirect()->route('piket.dashboard')->with('success', 'Perubahan berhasil disimpan.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Batalkan semua jika ada error
+            DB::rollBack();
             return redirect()->back()->withErrors('Terjadi kesalahan saat menyimpan data: ' . $e->getMessage());
         }
     }

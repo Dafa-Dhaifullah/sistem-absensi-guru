@@ -54,7 +54,7 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
 
         $jadwalGuru = $guruTerpilih->jadwalPelajaran->groupBy('hari');
         $hariLibur = HariLibur::whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
-            ->pluck('tanggal')->map(fn($date) => $date->toDateString());
+            ->pluck('tanggal')->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
         
         // ==========================================================
         // ## PERBAIKAN N+1 QUERY ##

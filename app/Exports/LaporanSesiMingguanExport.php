@@ -44,7 +44,7 @@ class LaporanSesiMingguanExport implements WithEvents
         
         $hariLibur = HariLibur::whereBetween('tanggal', [$awalMinggu, $akhirMinggu])
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+            ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         // --- OPTIMASI (N+1): Ambil data KalenderBlok 1x ---
         $kalenderBlokMingguIni = KalenderBlok::where(function ($query) use ($awalMinggu, $akhirMinggu) {
@@ -180,7 +180,7 @@ class LaporanSesiMingguanExport implements WithEvents
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $headings = [
-                    'Nama Guru', 'Total Sesi Wajib', 'Sesi Hadir', 'Sesi Terlambat',
+                    'Nama Guru', 'Total Jadwal Wajib', 'Jadwal Hadir', 'Jadwal Terlambat',
                     'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
                 ];
                 $sheet->fromArray($headings, null, 'A4');

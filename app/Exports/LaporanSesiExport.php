@@ -48,7 +48,7 @@ class LaporanSesiExport implements WithEvents
             ->orderBy('name', 'asc')->get();
 
         $hariLibur = HariLibur::whereBetween('tanggal', [$awalBulan, $akhirBulan])
-            ->pluck('tanggal')->map(fn ($date) => $date->toDateString());
+            ->pluck('tanggal')->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         $kalenderBlokBulanIni = KalenderBlok::where(function ($query) use ($awalBulan, $akhirBulan) {
             $query->where('tanggal_mulai', '<=', $akhirBulan)
@@ -84,9 +84,7 @@ class LaporanSesiExport implements WithEvents
                 $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
                 // --- AKHIR DARI LOGIKA PENCARIAN BLOK ---
 
-                // ==========================================================
-                // ## PERBAIKAN LOGIKA FILTER BLOK ##
-                // ==========================================================
+               
                 
                 $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
                 $jadwalMentahHariIni = $jadwalHariGuru->get($namaHari);
@@ -102,9 +100,7 @@ class LaporanSesiExport implements WithEvents
                 // ==========================================================
                 
 
-                // ==========================================================
-                // ## LOGIKA PENGELOMPOKAN BLOK (DIKEMBALIKAN) ##
-                // ==========================================================
+               
                 $tempBlock = null;
                 $jadwalBlok = collect();
                 foreach ($jadwalUntukHariIni as $jadwal) {
@@ -188,13 +184,13 @@ class LaporanSesiExport implements WithEvents
 
                 // --- 1. MEMBUAT JUDUL ---
                 $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
+                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER-JADWAL - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // --- 2. MEMBUAT HEADER TABEL ---
                 $headings = [
-                    'Nama Guru', 'Total Sesi Wajib', 'Sesi Hadir', 'Sesi Terlambat',
+                    'Nama Guru', 'Total Jadwal Wajib', 'Jadwal Hadir', 'Jadwal Terlambat',
                     'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
                 ];
                 $sheet->fromArray($headings, null, 'A3');

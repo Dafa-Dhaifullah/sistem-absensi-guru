@@ -1,7 +1,7 @@
 <x-admin-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Laporan Rekapitulasi Bulanan (per Sesi)') }}
+            {{ __('Laporan Rekapitulasi Bulanan (per Jadwal)') }}
         </h2>
     </x-slot>
 
@@ -38,8 +38,8 @@
                 <div class="sm:hidden">
                     <label for="tabs" class="sr-only">Pilih tampilan</label>
                     <select id="tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" onchange="window.location.href = this.value;">
-                        <option value="{{ route('admin.laporan.bulanan', request()->query()) }}">Tampilan Harian (Grid)</option>
-                        <option value="{{ route('admin.laporan.bulanan.sesi', request()->query()) }}" selected>Tampilan per Sesi (Ringkasan)</option>
+                        <option value="{{ route('admin.laporan.bulanan', request()->query()) }}">Tampilan Harian </option>
+                        <option value="{{ route('admin.laporan.bulanan.sesi', request()->query()) }}" selected>Tampilan per Jadwal</option>
                     </select>
                 </div>
                 <div class="hidden sm:block">

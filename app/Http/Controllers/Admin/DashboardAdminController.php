@@ -35,7 +35,7 @@ class DashboardAdminController extends Controller
         $hariLibur = HariLibur::whereMonth('tanggal', $bulanIni)
             ->whereYear('tanggal', $tahunIni)
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+            ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
             
         $guruWarning = collect();
 

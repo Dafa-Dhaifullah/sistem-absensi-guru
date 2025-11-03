@@ -18,48 +18,96 @@ use App\Exports\LaporanBulananExport;
 use App\Exports\LaporanMingguanExport;
 use App\Models\HariLibur;
 use App\Exports\LaporanSesiExport;
+use Illuminate\Support\Facades\Cache;
 
 class LaporanController extends Controller
 {
 
-   public function bulanan(Request $request)
+  public function bulanan(Request $request)
     {
         $bulan = (int) $request->input('bulan', now()->month);
         $tahun = (int) $request->input('tahun', now()->year);
         $daysInMonth = Carbon::createFromDate($tahun, $bulan)->daysInMonth;
         $today = now('Asia/Jakarta')->startOfDay(); 
+        $awalBulan = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+        $akhirBulan = $awalBulan->clone()->endOfMonth();
 
+        // Kueri ini tetap efisien (sudah benar)
         $semuaGuru = \App\Models\User::where('role', 'guru')
-            ->with(['laporanHarian', 'jadwalPelajaran'])
+            ->with(['laporanHarian' => function ($query) use ($bulan, $tahun) {
+                $query->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun);
+            }, 'jadwalPelajaran'])
             ->orderBy('name', 'asc')->get();
         
         $hariLibur = \App\Models\HariLibur::whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+           ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
+
+        // ==========================================================
+        // == PERBAIKAN: LOGIKA HARI KERJA EFEKTIF (DENGAN KALENDER BLOK) ==
+        // ==========================================================
+
+        // 2. Ambil data KalenderBlok satu kali
+        $kalenderBlokBulanIni = KalenderBlok::where(function ($query) use ($awalBulan, $akhirBulan) {
+            $query->where('tanggal_mulai', '<=', $akhirBulan)
+                  ->where('tanggal_selesai', '>=', $awalBulan);
+        })->get();
 
         $hariKerjaEfektif = [];
         foreach($semuaGuru as $guru) {
-            $jadwalHariGuru = $guru->jadwalPelajaran->pluck('hari')->unique();
+            // 3. Ambil jadwal lengkap (di-grup per hari)
+            $jadwalPerHari = $guru->jadwalPelajaran->groupBy('hari');
             $hariKerjaList = collect(); 
+
             for ($i = 1; $i <= $daysInMonth; $i++) {
-                $tanggal = Carbon::create($tahun, $bulan, $i); // Perbaikan: $this->tahun dan $this->bulan
+                $tanggal = Carbon::create($tahun, $bulan, $i)->startOfDay();
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
-                if ($jadwalHariGuru->contains($namaHari) && !$hariLibur->contains($tanggal->toDateString())) {
+
+                // 4. Cek Libur atau tidak ada jadwal sama sekali hari itu
+                if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalPerHari->has($namaHari)) {
+                    continue;
+                }
+                
+                // 5. Cari Tipe Minggu (Minggu 1 / Minggu 2)
+                $kalenderBlokHariIni = $kalenderBlokBulanIni->firstWhere(function ($blok) use ($tanggal) {
+                    $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
+                    $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
+                    return $tanggal->gte($mulai) && $tanggal->lte($selesai);
+                });
+                $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
+                $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu));
+
+                // 6. Filter jadwal berdasarkan Tipe Minggu (logika str_contains)
+                $jadwalMentahHariIni = $jadwalPerHari->get($namaHari);
+                
+                $jadwalValid = $jadwalMentahHariIni->filter(function ($jadwal) use ($tipeMinggu, $nomorMinggu) {
+                    $tipeBlokJadwal = $jadwal->tipe_blok;
+                    if ($tipeBlokJadwal == 'Setiap Minggu') return true;
+                    if ($tipeMinggu == 'Reguler' && $tipeBlokJadwal == 'Reguler') return true;
+                    // Ini adalah kunci: Cocokkan "1" dengan "Hanya Minggu 1"
+                    if ($nomorMinggu != 'Reguler' && str_contains($tipeBlokJadwal, $nomorMinggu)) return true;
+                    if ($tipeBlokJadwal == $tipeMinggu) return true;
+                    return false;
+                });
+
+                // 7. Jika ada jadwal valid, baru hitung sebagai hari kerja
+                if ($jadwalValid->isNotEmpty()) {
                     $hariKerjaList->push($tanggal->toDateString());
                 }
             }
-            $this->hariKerjaEfektif[$guru->id] = $hariKerjaList;
+            $hariKerjaEfektif[$guru->id] = $hariKerjaList;
         }
+        // ==========================================================
+        // == AKHIR PERBAIKAN ==
+        // ==========================================================
 
         $laporanHarianTeringkas = collect();
         $summaryTotal = [];
 
         foreach ($semuaGuru as $index => $guru) {
-            $laporanGuru = $guru->laporanHarian->where('tanggal', '>=', Carbon::create($tahun, $bulan, 1)->startOfMonth())
-                                              ->where('tanggal', '<=', Carbon::create($tahun, $bulan, 1)->endOfMonth());
+            $laporanGuru = $guru->laporanHarian; 
             $dataHarian = [];
-            
             $totalHadir = 0; $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
 
             for ($i = 1; $i <= $daysInMonth; $i++) {
@@ -67,7 +115,8 @@ class LaporanController extends Controller
                 $tanggalCek = $tanggal->toDateString();
                 
                 $statusFinal = '-'; 
-                $isHariKerja = isset($this->hariKerjaEfektif[$guru->id]) && $this->hariKerjaEfektif[$guru->id]->contains($tanggalCek);
+                // Logika $isHariKerja sekarang akurat berdasarkan 'tipe_blok'
+                $isHariKerja = isset($hariKerjaEfektif[$guru->id]) && $hariKerjaEfektif[$guru->id]->contains($tanggalCek);
                 
                 if ($isHariKerja) {
                     $laporanPerHari = $laporanGuru->filter(function ($laporan) use ($tanggalCek) {
@@ -75,6 +124,8 @@ class LaporanController extends Controller
                     });
                     
                     if ($laporanPerHari->isNotEmpty()) {
+                        // Penjelasan Anda: "jika ada satu jadwal yg statusnya hadir, maka guru itu hadir"
+                        // Kode 'contains' ini sudah melakukan itu.
                         if ($laporanPerHari->contains('status', 'Hadir')) {
                             $statusFinal = 'H'; $totalHadir++;
                         } elseif ($laporanPerHari->contains('status', 'DL')) {
@@ -84,7 +135,7 @@ class LaporanController extends Controller
                         } elseif ($laporanPerHari->contains('status', 'Izin')) {
                             $statusFinal = 'I'; $totalIzin++;
                         } else {
-                            $statusFinal = 'A'; $totalAlpa++;
+                            $statusFinal = 'A'; $totalAlpa++; // Jika ada laporan tapi bukan H, S, I, DL (cth: Alpa)
                         }
                     } else {
                         if ($tanggal->isBefore($today)) {
@@ -109,7 +160,7 @@ class LaporanController extends Controller
             'bulan' => $bulan,
             'tahun' => $tahun,
             'daysInMonth' => $daysInMonth,
-            'hariKerjaEfektif' => $this->hariKerjaEfektif // Kirim data ini
+            'hariKerjaEfektif' => $hariKerjaEfektif
         ]);
     }
    public function bulananSesi(Request $request)
@@ -128,7 +179,7 @@ class LaporanController extends Controller
             ->orderBy('name', 'asc')->get();
         
         $hariLibur = HariLibur::whereBetween('tanggal', [$awalBulan, $akhirBulan])
-            ->pluck('tanggal')->map(fn($date) => $date->toDateString());
+            ->pluck('tanggal')->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         $kalenderBlokBulanIni = KalenderBlok::where(function ($query) use ($awalBulan, $akhirBulan) {
             $query->where('tanggal_mulai', '<=', $akhirBulan)
@@ -284,7 +335,7 @@ class LaporanController extends Controller
         
         $hariLibur = \App\Models\HariLibur::whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+            ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         $hariKerjaEfektif = [];
         foreach($semuaGuru as $guru) {
@@ -381,7 +432,7 @@ class LaporanController extends Controller
         
         $hariLibur = HariLibur::whereBetween('tanggal', [$awalMinggu, $akhirMinggu])
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+            ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         // --- OPTIMASI (N+1): Ambil data KalenderBlok 1x ---
         $kalenderBlokMingguIni = KalenderBlok::where(function ($query) use ($awalMinggu, $akhirMinggu) {
@@ -550,7 +601,7 @@ class LaporanController extends Controller
 
             $jadwalGuru = $guruTerpilih->jadwalPelajaran->groupBy('hari');
             $hariLibur = \App\Models\HariLibur::whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
-                ->pluck('tanggal')->map(fn($date) => $date->toDateString());
+                ->pluck('tanggal')->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
             
             // ==========================================================
             // ## PERBAIKAN N+1 QUERY ##
@@ -677,7 +728,7 @@ class LaporanController extends Controller
     /**
     * Menampilkan jadwal pelajaran yang sedang berlangsung.
     */
-    public function realtime(Request $request)
+     public function realtime(Request $request)
     {
         $today = now('Asia/Jakarta');
         $hariMap = [
@@ -693,7 +744,7 @@ class LaporanController extends Controller
             $jamKeSekarang = null;
             $jadwalSekarang = collect();
             $laporanHariIni = collect();
-            $tipeMinggu = 'Hari Libur';
+            $tipeMingguString = 'Hari Libur'; // REVISI: Variabel string yang aman
         } else {
             // 2. Cari Jam Ke- berapa sekarang
             $jamKeSekarang = MasterJamPelajaran::where('hari', $hariIni)
@@ -701,25 +752,56 @@ class LaporanController extends Controller
                                 ->where('jam_selesai', '>=', $jamSekarang)
                                 ->first();
             
+            // ==========================================================
+            // REVISI: Gunakan Cache untuk mengambil tipe minggu
+            // ==========================================================
+            $tipeMinggu = Cache::remember('kalender_blok_today', 60, function () use ($today) {
+                // Gunakan format Y-m-d H:i:s untuk perbandingan yang aman
+                $nowStr = $today->format('Y-m-d H:i:s');
+                return KalenderBlok::where('tanggal_mulai', '<=', $nowStr)
+                                     ->where('tanggal_selesai', '>=', $nowStr)
+                                     ->first();
+            });
+            
+            // ==========================================================
+            // REVISI: Logika aman untuk string tipeMinggu
+            // ==========================================================
+            $tipeMingguString = $tipeMinggu ? $tipeMinggu->tipe_minggu : 'Reguler';
+            
             $jadwalSekarang = collect();
-            $tipeMinggu = KalenderBlok::whereDate('tanggal_mulai', '<=', $today)
-                                      ->whereDate('tanggal_selesai', '>=', $today)
-                                      ->first();
             
             // 3. Jika sedang jam pelajaran, cari semua jadwal
             if ($jamKeSekarang) {
-                $blokValid = ['Setiap Minggu'];
-                if ($tipeMinggu) {
-                    if ($tipeMinggu->tipe_minggu == 'Minggu 1') $blokValid[] = 'Hanya Minggu 1';
-                    if ($tipeMinggu->tipe_minggu == 'Minggu 2') $blokValid[] = 'Hanya Minggu 2';
-                }
+                
+                // ==========================================================
+                // ## REVISI KRITIS: LOGIKA FILTER BLOK ##
+                // ==========================================================
+                $nomorMinggu = trim(str_replace('Minggu', '', $tipeMingguString)); // Cth: "1" atau "2"
 
                 $jadwalSekarang = JadwalPelajaran::where('hari', $hariIni)
-                                    ->where('jam_ke', $jamKeSekarang->jam_ke)
-                                    ->whereIn('tipe_blok', $blokValid)
-                                    ->with('user')
-                                    ->orderBy('kelas', 'asc')
-                                    ->get();
+                    ->where('jam_ke', $jamKeSekarang->jam_ke)
+                    ->where(function ($query) use ($tipeMingguString, $nomorMinggu) {
+                        
+                        // 1. Selalu sertakan 'Setiap Minggu'
+                        $query->where('tipe_blok', 'Setiap Minggu');
+                        
+                        // 2. Sertakan jika nama blok sama persis (cth: "Reguler" == "Reguler")
+                        $query->orWhere('tipe_blok', $tipeMingguString);
+                        
+                        // 3. Sertakan jika $nomorMinggu (cth: "1") ada di dalam string 
+                        //    (untuk mencocokkan "Hanya Minggu 1,2")
+                        if (is_numeric($nomorMinggu)) {
+                            $query->orWhere('tipe_blok', 'like', '%' . $nomorMinggu . '%'); 
+                        }
+                        
+                        // 4. (Pengaman) Jika tipe minggu reguler, pastikan jadwal reguler terambil
+                        if ($tipeMingguString === 'Reguler') {
+                             $query->orWhere('tipe_blok', 'Reguler');
+                        }
+                    })
+                    ->with('user')
+                    ->orderBy('kelas', 'asc')
+                    ->get();
             }
 
             // 4. Ambil semua laporan hari ini untuk dicek statusnya
@@ -732,7 +814,7 @@ class LaporanController extends Controller
             'jadwalSekarang' => $jadwalSekarang,
             'hariIni' => $hariIni,
             'jamKeSekarang' => $jamKeSekarang,
-            'tipeMinggu' => $tipeMinggu->tipe_minggu ?? ($tipeMinggu ?? 'Reguler'),
+            'tipeMinggu' => $tipeMingguString, // REVISI: Kirim string yang aman
             'laporanHariIni' => $laporanHariIni
         ]);
     }
@@ -792,7 +874,7 @@ class LaporanController extends Controller
         
         $hariLibur = HariLibur::whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai])
             ->pluck('tanggal')
-            ->map(fn($date) => $date->toDateString());
+            ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         $hariKerjaEfektif = [];
         foreach($semuaGuru as $guru) {

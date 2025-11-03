@@ -24,7 +24,7 @@ class PenggunaImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             'nip'      => $row['nip'],
             'no_wa'    => $row['no_wa'],
             'role'     => $row['role'],
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('smkn6garut'),
         ]);
     }
 
