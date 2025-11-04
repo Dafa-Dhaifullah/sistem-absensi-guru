@@ -180,7 +180,7 @@ class LaporanSesiMingguanExport implements WithEvents
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $headings = [
-                    'Nama Guru', 'Total Jadwal Wajib', 'Jadwal Hadir', 'Jadwal Terlambat',
+                    'Nama Guru', 'Total Jadwal', 'Hadir', 'Terlambat',
                     'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
                 ];
                 $sheet->fromArray($headings, null, 'A4');

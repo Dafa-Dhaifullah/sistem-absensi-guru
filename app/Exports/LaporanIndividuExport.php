@@ -151,7 +151,7 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
             [
                 'Tanggal',
                 'Hari',
-                'Sesi (Jam Ke)',
+                'Jadwal (Jam Ke)',
                 'Kelas',
                 'Status Kehadiran',
                 'Keterangan',

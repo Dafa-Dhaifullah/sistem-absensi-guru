@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Support\Facades\Crypt; // Tidak diperlukan lagi
-// use Illuminate\Contracts\Encryption\DecryptException; // Tidak diperlukan lagi
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\LaporanHarian;
 use App\Models\JadwalPelajaran;
 use App\Models\MasterJamPelajaran;
@@ -20,7 +20,6 @@ class AbsenController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validasi Input
         $validated = $request->validate([
             'qr_token' => 'required|string',
             'foto_selfie' => 'required|image|max:15360', 
@@ -42,25 +41,31 @@ class AbsenController extends Controller
             if ($jadwal->user_id != $user->id) {
                 return redirect()->back()->withErrors(['foto_selfie' => 'Jadwal tidak sesuai dengan akun Anda.']);
             }
-            if (LaporanHarian::where('jadwal_pelajaran_id', $jadwal->id)->exists()) {
-                return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah absen untuk salah satu jam di blok ini.']);
+            
+            // ==========================================================
+            // ## REVISI LOGIKA VALIDASI ##
+            // ==========================================================
+            $laporanExist = LaporanHarian::where('jadwal_pelajaran_id', $jadwal->id)
+                                        ->where('tanggal', $today->toDateString())
+                                        ->first();
+            
+            // Cek apakah data yang ada adalah absensi mandiri (selfie)
+            if ($laporanExist && $laporanExist->diabsen_oleh == $user->id && $laporanExist->status == 'Hadir') {
+                // Jika guru sudah absen selfie, BLOKIR.
+                return redirect()->back()->withErrors(['foto_selfie' => 'Anda sudah melakukan absensi mandiri (selfie) untuk jam pelajaran ini.']);
             }
+            // Jika $laporanExist ada TAPI diabsen_oleh oleh PIKET (misal Alpa/Sakit),
+            // maka JANGAN diblokir. Biarkan kode melanjutkan proses...
         }
         
-        // ==========================================================
-        // ## REVISI LOGIKA VALIDASI QR CODE ##
-        // ==========================================================
-        // Hapus try-catch dan Crypt::decryptString
-        // Ganti dengan perbandingan teks biasa
+        // ... (Validasi QR Code tidak berubah) ...
         $qrKelas = $validated['qr_token'];
         $jadwalKelas = $jadwalPertama->kelas;
-
         if ($qrKelas !== $jadwalKelas) {
             return redirect()->back()->withErrors(['foto_selfie' => 'Gagal validasi QR Code: QR Code tidak sesuai dengan kelas yang dijadwalkan.']);
         }
-        // ==========================================================
 
-        // --- Tentukan Status Keterlambatan (berdasarkan jam pertama) ---
+        // ... (Logika Status Keterlambatan tidak berubah) ...
         $masterJamPertama = MasterJamPelajaran::where('hari', $jadwalPertama->hari)->where('jam_ke', $jadwalPertama->jam_ke)->first();
         if (!$masterJamPertama) {
             return redirect()->back()->withErrors(['foto_selfie' => 'Master jam pelajaran tidak ditemukan.']);
@@ -68,7 +73,7 @@ class AbsenController extends Controller
         $batasToleransi = Carbon::parse($today->toDateString() . ' ' . $masterJamPertama->jam_mulai)->addMinutes(15);
         $statusKeterlambatan = ($today->isAfter($batasToleransi)) ? 'Terlambat' : 'Tepat Waktu';
 
-        // --- Logika Kompresi Gambar (Tidak berubah) ---
+        // ... (Logika Kompresi Gambar tidak berubah) ...
         try {
             $image = $request->file('foto_selfie');
             $manager = new ImageManager(new Driver());
@@ -82,20 +87,28 @@ class AbsenController extends Controller
             return redirect()->back()->withErrors(['foto_selfie' => 'Gagal memproses gambar: ' . $e->getMessage()]);
         }
         
-        // LOOPING untuk menyimpan laporan untuk SETIAP jam di blok
+        
+        
         foreach ($jadwals as $jadwal) {
-            LaporanHarian::create([
-                'jadwal_pelajaran_id' => $jadwal->id,
-                'user_id' => $user->id,
-                'tanggal' => $today->toDateString(),
-                'status' => 'Hadir',
-                'jam_absen' => $today->toTimeString(),
-                'foto_selfie_path' => $pathFoto,
-                'status_keterlambatan' => $statusKeterlambatan,
-                'diabsen_oleh' => $user->id,
-            ]);
+            LaporanHarian::updateOrCreate(
+                [
+                    // Kunci untuk mencari record
+                    'tanggal' => $today->toDateString(),
+                    'jadwal_pelajaran_id' => $jadwal->id,
+                ],
+                [
+                    // Data yang akan di-update atau di-create
+                    'user_id' => $user->id,
+                    'status' => 'Hadir',
+                    'jam_absen' => $today->toTimeString(),
+                    'foto_selfie_path' => $pathFoto,
+                    'status_keterlambatan' => $statusKeterlambatan,
+                    'diabsen_oleh' => $user->id, // Diisi ID guru sendiri (mandiri)
+                    'keterangan_piket' => null // Hapus keterangan piket sebelumnya
+                ]
+            );
         }
 
-        return redirect()->route('guru.dashboard')->with('success', 'Absensi untuk kelas ' . $jadwalPertama->kelas . ' berhasil!');
+        return redirect()->route('guru.dashboard')->with('success', 'Absensi untuk kelas ' . $jadwalPertama->kelas . ' berhasil! Status Anda telah diperbarui.');
     }
 }

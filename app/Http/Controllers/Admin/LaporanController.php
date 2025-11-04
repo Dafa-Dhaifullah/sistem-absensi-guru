@@ -198,65 +198,29 @@ class LaporanController extends Controller
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $tanggal = $awalBulan->clone()->addDays($i - 1);
                 
-                if ($tanggal->gt($today)) break; 
-                
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
                 
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
 
-                // --- INI ADALAH LOGIKA PENCARIAN BLOK ---
+                // --- Logika Pencarian Tipe Blok ---
                 $kalenderBlokHariIni = $kalenderBlokBulanIni->firstWhere(function ($blok) use ($tanggal) {
                     $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
                     $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
                     return $tanggal->gte($mulai) && $tanggal->lte($selesai);
                 });
-                // $tipeMinggu akan berisi (contoh): "Minggu 1", "Minggu 2", atau "Reguler"
-                $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
-                // --- AKHIR DARI LOGIKA PENCARIAN BLOK ---
-
-                
-                // ==========================================================
-                // ## PERBAIKAN LOGIKA FILTER BLOK ##
-                // ==========================================================
-                
-                // 1. Ekstrak nomornya (misal: "1" dari "Minggu 1")
-                // Kita gunakan trim() untuk jaga-jaga jika ada spasi
+                $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler'; 
                 $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
 
+                // --- Logika Filter Jadwal (str_contains) ---
                 $jadwalMentahHariIni = $jadwalHariGuru->get($namaHari);
-
-                // 2. Kita gunakan filter manual (bukan whereIn)
                 $jadwalUntukHariIni = $jadwalMentahHariIni->filter(function ($jadwal) use ($tipeMinggu, $nomorMinggu) {
-                    
                     $tipeBlokJadwal = $jadwal->tipe_blok;
-
-                    // Kondisi 1: Selalu loloskan 'Setiap Minggu'
-                    if ($tipeBlokJadwal == 'Setiap Minggu') {
-                        return true;
-                    }
-
-                    // Kondisi 2: Cek jika $tipeMinggu adalah "Reguler", jadwal harus "Reguler"
-                    if ($tipeMinggu == 'Reguler' && $tipeBlokJadwal == 'Reguler') {
-                        return true;
-                    }
-
-                    // Kondisi 3: Cek jika nomor minggu (misal "1")
-                    // terkandung di dalam string jadwal (misal "Hanya Minggu 1,2")
-                    // Kita juga cek jika $nomorMinggu bukan "Reguler"
-                    if ($nomorMinggu != 'Reguler' && str_contains($tipeBlokJadwal, $nomorMinggu)) {
-                        return true;
-                    }
-
-                    // Kondisi 4: Cek kecocokan penuh (jika kebetulan namanya sama)
-                    if ($tipeBlokJadwal == $tipeMinggu) {
-                        return true;
-                    }
-
+                    if ($tipeBlokJadwal == 'Setiap Minggu') return true;
+                    if ($tipeMinggu == 'Reguler' && $tipeBlokJadwal == 'Reguler') return true;
+                    if ($nomorMinggu != 'Reguler' && str_contains($tipeBlokJadwal, $nomorMinggu)) return true;
+                    if ($tipeBlokJadwal == $tipeMinggu) return true;
                     return false;
-
                 })->sortBy('jam_ke');
-                // ==========================================================
-
 
                 // --- Logika Pengelompokan Blok ---
                 $tempBlock = null;
@@ -270,10 +234,20 @@ class LaporanController extends Controller
                     }
                 }
                 if ($tempBlock) $jadwalBlok->push($tempBlock);
-                // --- Akhir Logika Blok ---
 
+                // ==========================================================
+                // ## PERBAIKAN LOGIKA PERHITUNGAN ##
+                // ==========================================================
+                
+                // 1. Total Sesi Wajib dihitung untuk SEMUA HARI (termasuk masa depan)
                 $totalSesiWajib += $jadwalBlok->count();
 
+                // 2. JANGAN LANJUTKAN jika tanggal ini ada di masa depan
+                if ($tanggal->gt($today)) {
+                    continue; 
+                }
+
+                // 3. Status (Hadir/Alpa/dll) HANYA dihitung untuk hari ini ke belakang
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
                     $laporan = $guru->laporanHarian
@@ -294,9 +268,12 @@ class LaporanController extends Controller
                             default: $totalAlpa++; break;
                         }
                     } else {
+                        // Hanya hitung Alpa jika tanggalnya sudah lewat (sama dengan $today atau sebelumnya)
+                        // (Cek $tanggal->gt($today) di atas sudah menangani ini)
                         $totalAlpa++;
                     }
                 }
+                // ==========================================================
             } 
             
             $persentaseHadir = ($totalSesiWajib > 0) ? ($totalHadir / $totalSesiWajib) * 100 : 0;

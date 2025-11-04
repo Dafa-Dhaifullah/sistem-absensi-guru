@@ -47,7 +47,7 @@
                 <div class="p-6 text-gray-900">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium">
-                            Menampilkan Laporan Sesi: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
+                            Menampilkan Laporan Per Jadwal: {{ \Carbon\Carbon::parse($tanggalMulai)->isoFormat('D MMM Y') }} s/d {{ \Carbon\Carbon::parse($tanggalSelesai)->isoFormat('D MMM Y') }}
                         </h3>
                         <a href="{{ route('admin.laporan.export.mingguan-sesi', request()->query()) }}"  class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                             Export ke Excel
@@ -58,9 +58,9 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Guru</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Jadwal Wajib</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jadwal Hadir</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Jadwal Terlambat</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Total Jadwal</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Hadir</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Terlambat</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Sakit</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Izin</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Alpa</th>

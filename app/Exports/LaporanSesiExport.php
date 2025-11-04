@@ -48,7 +48,7 @@ class LaporanSesiExport implements WithEvents
             ->orderBy('name', 'asc')->get();
 
         $hariLibur = HariLibur::whereBetween('tanggal', [$awalBulan, $akhirBulan])
-            ->pluck('tanggal')->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
+            ->pluck('tanggal')->map(fn ($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
         $kalenderBlokBulanIni = KalenderBlok::where(function ($query) use ($awalBulan, $akhirBulan) {
             $query->where('tanggal_mulai', '<=', $akhirBulan)
@@ -69,26 +69,21 @@ class LaporanSesiExport implements WithEvents
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $tanggal = $awalBulan->clone()->addDays($i - 1);
 
-                if ($tanggal->gt($today)) break;
-
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
 
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
 
-                // --- INI ADALAH LOGIKA PENCARIAN BLOK ---
+                // --- Logika Pencarian Tipe Blok ---
                 $kalenderBlokHariIni = $kalenderBlokBulanIni->firstWhere(function ($blok) use ($tanggal) {
                     $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
                     $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
                     return $tanggal->gte($mulai) && $tanggal->lte($selesai);
                 });
                 $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
-                // --- AKHIR DARI LOGIKA PENCARIAN BLOK ---
+                $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu));
 
-               
-                
-                $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
+                // --- Logika Filter Jadwal (str_contains) ---
                 $jadwalMentahHariIni = $jadwalHariGuru->get($namaHari);
-
                 $jadwalUntukHariIni = $jadwalMentahHariIni->filter(function ($jadwal) use ($tipeMinggu, $nomorMinggu) {
                     $tipeBlokJadwal = $jadwal->tipe_blok;
                     if ($tipeBlokJadwal == 'Setiap Minggu') return true;
@@ -97,10 +92,9 @@ class LaporanSesiExport implements WithEvents
                     if ($tipeBlokJadwal == $tipeMinggu) return true;
                     return false;
                 })->sortBy('jam_ke');
-                // ==========================================================
                 
 
-               
+                // --- Logika Pengelompokan Blok ---
                 $tempBlock = null;
                 $jadwalBlok = collect();
                 foreach ($jadwalUntukHariIni as $jadwal) {
@@ -118,19 +112,26 @@ class LaporanSesiExport implements WithEvents
                     }
                 }
                 if ($tempBlock) $jadwalBlok->push($tempBlock); 
-                // --- Akhir Logika Blok ---
 
-                // 1. Hitung total sesi wajib berdasarkan jumlah BLOK
+                // ==========================================================
+                // ## PERBAIKAN LOGIKA PERHITUNGAN ##
+                // ==========================================================
+
+                // 1. Total Sesi Wajib dihitung untuk SEMUA HARI (termasuk masa depan)
                 $totalSesiWajib += $jadwalBlok->count();
 
-                // 2. Loop setiap BLOK untuk cek absensi
+                // 2. JANGAN LANJUTKAN jika tanggal ini ada di masa depan
+                if ($tanggal->gt($today)) {
+                    continue; 
+                }
+
+                // 3. Status (Hadir/Alpa/dll) HANYA dihitung untuk hari ini ke belakang
                 foreach ($jadwalBlok as $blok) {
-                    // Cek absensi HANYA berdasarkan jam pertama dari blok
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
                     
                     $laporan = $guru->laporanHarian
                         ->where('jadwal_pelajaran_id', $jadwalPertamaId)
-                        ->where('tanggal', $tanggal) // Perbandingan Carbon-to-Carbon
+                        ->where('tanggal', $tanggal) 
                         ->first();
 
                     if ($laporan) {
@@ -178,19 +179,20 @@ class LaporanSesiExport implements WithEvents
 
     public function registerEvents(): array
     {
+        // ... (Logika styling 'registerEvents' tidak berubah sama sekali) ...
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
                 // --- 1. MEMBUAT JUDUL ---
                 $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER-JADWAL - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
+                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // --- 2. MEMBUAT HEADER TABEL ---
                 $headings = [
-                    'Nama Guru', 'Total Jadwal Wajib', 'Jadwal Hadir', 'Jadwal Terlambat',
+                    'Nama Guru', 'Total Jadwal', 'Hadir', 'Terlambat',
                     'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
                 ];
                 $sheet->fromArray($headings, null, 'A3');

@@ -62,7 +62,7 @@
                         
                         <!-- Ringkasan (Summary) Sesi -->
                         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                            <div class="p-4 bg-gray-100 rounded-lg text-center"><div class="text-sm uppercase">Total Sesi Wajib</div><div class="text-3xl font-bold">{{ $summary['Total'] }}</div></div>
+                            <div class="p-4 bg-gray-100 rounded-lg text-center"><div class="text-sm uppercase">Total Jadwal</div><div class="text-3xl font-bold">{{ $summary['Total'] }}</div></div>
                             <div class="p-4 bg-green-100 rounded-lg text-center"><div class="text-sm uppercase">Hadir Tepat Waktu</div><div class="text-3xl font-bold">{{ $summary['Hadir'] - $summary['Terlambat'] }}</div></div>
                             <div class="p-4 bg-orange-100 rounded-lg text-center"><div class="text-sm uppercase">Terlambat</div><div class="text-3xl font-bold">{{ $summary['Terlambat'] }}</div></div>
                             <div class="p-4 bg-yellow-100 rounded-lg text-center"><div class="text-sm uppercase">Sakit</div><div class="text-3xl font-bold">{{ $summary['Sakit'] }}</div></div>
@@ -71,15 +71,12 @@
                             <div class="p-4 bg-purple-100 rounded-lg text-center"><div class="text-sm uppercase">Dinas Luar</div><div class="text-3xl font-bold">{{ $summary['DL'] }}</div></div>
                         </div>
 
-                        <!-- ========================================================== -->
-                        <!-- == REVISI TABEL LOG SESI == -->
-                        <!-- ========================================================== -->
                         <div class="overflow-x-auto border rounded-lg">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sesi Mengajar</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jadwal Mengajar</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
                                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Bukti Foto</th>

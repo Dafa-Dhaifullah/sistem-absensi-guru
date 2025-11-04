@@ -246,6 +246,14 @@
                                     
                                     $laporan = $laporanHariIni->get($blok['jadwal_ids'][0]);
 
+                                    // Cek apakah guru sudah absen 'Hadir' secara mandiri (selfie)
+                                    // Kita butuh auth()->id() untuk perbandingan
+                                    $userId = auth()->id(); 
+                                    $sudahAbsenMandiri = $laporan && $laporan->status == 'Hadir' && $laporan->diabsen_oleh == $userId;
+                                    
+                                    // Cek apakah ada status tapi BUKAN absen mandiri (cth: Alpa/Sakit dari Piket)
+                                    $statusDariPiket = $laporan && !$sudahAbsenMandiri;
+
                                     
                                     $bgColorClass = 'bg-gray-50'; // Default
                                     if ($laporan) {
@@ -301,24 +309,34 @@
                                     
                                     <!-- Status/Tombol Absen (Kanan) -->
                                     <div class="flex-shrink-0 w-full md:w-auto text-center">
-                                        @if ($laporan)
+                                         @if ($sudahAbsenMandiri)
                                             <div class="text-sm">
                                                 <span class="font-bold text-green-700">Sudah Absen</span>
-                                                <!-- Cetak variabel $laporanAbsenText yang sudah bersih -->
                                                 <div class="text-xs text-gray-500">{{ $laporanAbsenText }}</div>
                                             </div>
+                                        
                                         @elseif ($bisaAbsen)
-                                          
+                                            
                                             <button type="button" @click="openModal(@json($blok['jadwal_ids']))" class="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 text-sm">
                                                 Absen Masuk Kelas
                                             </button>
+                                            
+                                            {{-- Tampilkan status dari piket JIKA ada --}}
+                                            @if ($statusDariPiket)
+                                                <div class="text-xs text-red-600 mt-1">(Status Piket: {{ $laporan->status }})</div>
+                                            @endif
+
                                         @elseif ($sudahLewat)
-                                            <div class="text-sm font-bold text-red-600">
+                                            <div class="text-sm font-bold text-gray-600">
                                                 Absen Telah Ditutup
                                             </div>
+                                            {{-- Tampilkan status dari piket JIKA ada --}}
+                                            @if ($statusDariPiket)
+                                                <div class="text-xs text-red-600 mt-1">(Status Piket: {{ $laporan->status }})</div>
+                                            @endif
+                                            
                                         @else
                                             <div class="text-sm text-gray-500">
-                                                <!-- Cetak variabel $absenDibukaText yang sudah bersih -->
                                                 {{ $absenDibukaText }}
                                             </div>
                                         @endif
