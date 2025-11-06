@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\JadwalPiketController;
 use App\Http\Controllers\Admin\KalenderBlokController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\HariLiburController;
+use App\Http\Controllers\Admin\MasterJamController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\OverrideLogController;
 use App\Http\Controllers\Admin\QrCodeGeneratorController;
@@ -104,6 +105,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Rute Manajemen Sistem
     Route::resource('kalender-blok', KalenderBlokController::class);
     Route::resource('hari-libur', HariLiburController::class)->except(['edit', 'update']);
+
+    Route::get('master-jam', [MasterJamController::class, 'index'])->name('master-jam.index');
+Route::get('master-jam/{hari}', [MasterJamController::class, 'edit'])->name('master-jam.edit');
+Route::put('master-jam/{hari}', [MasterJamController::class, 'update'])->name('master-jam.update');
 
     // Rute untuk halaman generator QR Code
 Route::get('qrcode-generator', [QrCodeGeneratorController::class, 'index'])->name('qrcode.generator.index');

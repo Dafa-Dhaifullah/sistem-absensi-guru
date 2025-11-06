@@ -40,7 +40,7 @@
     </li>
 
     <hr class="border-gray-700 my-2 sidebar__hr">
-    <li class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase sidebar__section">Sistem Inti</li>
+    <li class="px-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase sidebar__section">Manajemen</li>
 
     <li>
       <a href="{{ route('admin.jadwal-pelajaran.index') }}"
@@ -85,6 +85,17 @@
         <span class="sidebar__label">Manajemen Hari Libur</span>
       </a>
     </li>
+
+    <li>
+    <a href="{{ route('admin.master-jam.index') }}" 
+       class="group flex items-center gap-3 rounded-lg px-3 py-2 {{ $active('admin.master-jam.*') }}"
+       title="Pelajaran">
+        <svg class="w-5 h-5 text-gray-400 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="sidebar__label">Manajemen Jam Pelajaran</span>
+    </a>
+</li>
 
     <li>
       <a href="{{ route('admin.qrcode.generator.index') }}"

@@ -34,14 +34,17 @@ class LaporanHarianController extends Controller
                 $jadwalPertama = JadwalPelajaran::findOrFail($firstJadwalId);
                 $keterangan = $request->input('keterangan_piket.' . $firstJadwalId);
                 
+                // (Optimasi kecil: Ambil $guruId satu kali)
+                $guruId = $jadwalPertama->user_id;
+
                 // --- Logika untuk menemukan semua jadwal dalam satu blok ---
-                $jadwalIdsInBlock = JadwalPelajaran::where('user_id', $jadwalPertama->user_id)
+                $jadwalIdsInBlock = JadwalPelajaran::where('user_id', $guruId)
                     ->where('kelas', $jadwalPertama->kelas)
                     ->where('hari', $jadwalPertama->hari)
                     ->where('tipe_blok', $jadwalPertama->tipe_blok)
                     ->where('jam_ke', '>=', $jadwalPertama->jam_ke)
                     ->orderBy('jam_ke', 'asc')
-                    ->pluck('id', 'jam_ke');
+                    ->pluck('id', 'jam_ke'); // Ambil jam_ke sebagai kunci
 
                 $blokIds = [];
                 $lastJam = $jadwalPertama->jam_ke - 1;
@@ -55,17 +58,18 @@ class LaporanHarianController extends Controller
                 }
                 // --- Akhir logika blok ---
 
-                $laporanPertama = LaporanHarian::where('jadwal_pelajaran_id', $firstJadwalId)->first();
+                // Cek status lama HANYA pada jam pertama
+                $laporanPertama = LaporanHarian::where('tanggal', $today->toDateString())
+                                    ->where('jadwal_pelajaran_id', $firstJadwalId)
+                                    ->first();
                 $statusLama = $laporanPertama->status ?? 'Belum Absen';
 
-                // ==========================================================
-                // ## REVISI: LOG HANYA DIBUAT SEKALI PER BLOK ##
-                // ==========================================================
                 // Catat log (hanya jika status berubah)
                 if ($statusLama !== $status) {
                     OverrideLog::create([
                         'piket_user_id' => auth()->id(),
-                        'jadwal_pelajaran_id' => $firstJadwalId, // Simpan ID jadwal pertama sebagai referensi
+                        'jadwal_pelajaran_id' => $firstJadwalId, 
+                        'guru_id' => $guruId, // Pastikan kolom 'guru_id' ada
                         'status_lama' => $statusLama,
                         'status_baru' => $status,
                         'keterangan' => $keterangan,
@@ -79,15 +83,16 @@ class LaporanHarianController extends Controller
                         'jadwal_pelajaran_id' => $jadwalId
                     ]);
                     
+                    // Keamanan: Jangan override jika guru sudah absen mandiri
                     if ($laporan->exists && $laporan->status === 'Hadir' && $laporan->diabsen_oleh == $laporan->user_id) {
                         continue;
                     }
                     
-                    $jadwalTerkait = JadwalPelajaran::find($jadwalId);
+                    // (find() tidak perlu di dalam loop, kita sudah punya $guruId)
 
                     // Simpan atau update record absensi
                     $laporan->fill([
-                        'user_id' => $jadwalTerkait->user_id,
+                        'user_id' => $guruId, // Gunakan $guruId dari atas
                         'status' => $status,
                         'jam_absen' => $today->toTimeString(),
                         'diabsen_oleh' => auth()->id(),
@@ -96,11 +101,22 @@ class LaporanHarianController extends Controller
                 }
             }
 
-            // Simpan Logbook
-            LogbookPiket::updateOrCreate(
-                ['tanggal' => $today->toDateString()],
-                ['kejadian_penting' => $request->kejadian_penting, 'tindak_lanjut' => $request->tindak_lanjut]
-            );
+            // ==========================================================
+            // ## PERBAIKAN BUG LOGBOOK ##
+            // ==========================================================
+            // Hanya update/create Logbook JIKA user mengisinya di form
+            if ($request->filled('kejadian_penting') || $request->filled('tindak_lanjut')) 
+            {
+                LogbookPiket::updateOrCreate(
+                    ['tanggal' => $today->toDateString()],
+                    [
+                        'kejadian_penting' => $request->kejadian_penting, 
+                        'tindak_lanjut' => $request->tindak_lanjut
+                    ]
+                );
+            }
+            // Jika request->kejadian_penting kosong, JANGAN LAKUKAN APA-APA
+            // (data logbook sebelumnya akan tetap aman).
             
             DB::commit();
             
