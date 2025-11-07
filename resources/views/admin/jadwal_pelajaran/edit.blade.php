@@ -54,14 +54,14 @@
                                     <x-input-label for="hari">
                                         Hari <span class="text-red-500">*</span>
                                     </x-input-label>
-                                    <select id="hari" name="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
-                                        <option value="Senin" @if(old('hari', $jadwal->hari) == 'Senin') selected @endif>Senin</option>
-                                        <option value="Selasa" @if(old('hari', $jadwal->hari) == 'Selasa') selected @endif>Selasa</option>
-                                        <option value="Rabu" @if(old('hari', $jadwal->hari) == 'Rabu') selected @endif>Rabu</option>
-                                        <option value="Kamis" @if(old('hari', $jadwal->hari) == 'Kamis') selected @endif>Kamis</option>
-                                        <option value="Jumat" @if(old('hari', $jadwal->hari) == 'Jumat') selected @endif>Jumat</option>
-                                        <option value="Sabtu" @if(old('hari', $jadwal->hari) == 'Sabtu') selected @endif>Sabtu</option>
-                                    </select>
+                                    <select name="hari" id="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+    <option value="">-- Pilih Hari --</option>
+    @foreach ($hariAktif as $hari)
+        <option value="{{ $hari }}" {{ (old('hari', $jadwal->hari ?? '') == $hari) ? 'selected' : '' }}>
+            {{ $hari }}
+        </option>
+    @endforeach
+</select>
                                     <x-input-error :messages="$errors->get('hari')" class="mt-2" />
                                 </div>
 

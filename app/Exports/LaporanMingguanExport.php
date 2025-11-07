@@ -18,10 +18,11 @@ class LaporanMingguanExport implements WithEvents
     protected $tanggalRange;
     protected $tanggalMulai;
     protected $tanggalSelesai;
-    protected $semuaGuru; // Dibutuhkan untuk mapping key
+    protected $semuaGuru; 
+    protected $hariKerjaEfektif;
 
     // Konstruktor sekarang menerima data yang sudah diproses dari controller
-    public function __construct(Collection $laporanHarianTeringkas, array $summaryTotal, Collection $semuaGuru, $tanggalRange, $tanggalMulai, $tanggalSelesai)
+    public function __construct(Collection $laporanHarianTeringkas, array $summaryTotal, Collection $semuaGuru, $tanggalRange, $tanggalMulai, $tanggalSelesai, $hariKerjaEfektif)
     {
         $this->laporanHarianTeringkas = $laporanHarianTeringkas;
         $this->summaryTotal = $summaryTotal;
@@ -29,6 +30,7 @@ class LaporanMingguanExport implements WithEvents
         $this->tanggalRange = $tanggalRange;
         $this->tanggalMulai = $tanggalMulai;
         $this->tanggalSelesai = $tanggalSelesai;
+        $this->hariKerjaEfektif = $hariKerjaEfektif;
     }
 
     public function registerEvents(): array

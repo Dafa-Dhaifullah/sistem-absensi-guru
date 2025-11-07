@@ -4,7 +4,8 @@ namespace App\Exports;
 
 use App\Models\User;
 use App\Models\HariLibur;
-use App\Models\KalenderBlok; // <-- 1. IMPORT MODEL
+use App\Models\KalenderBlok; 
+use App\Models\MasterHariKerja;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -58,6 +59,8 @@ class LaporanBulananExport implements WithEvents
                   ->where('tanggal_selesai', '>=', $awalBulan);
         })->get();
 
+        $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
         foreach($this->semuaGuru as $guru) {
             $jadwalPerHari = $guru->jadwalPelajaran->groupBy('hari'); // Grup jadwal per hari
             $hariKerjaList = collect(); 
@@ -65,6 +68,10 @@ class LaporanBulananExport implements WithEvents
             for ($i = 1; $i <= $this->daysInMonth; $i++) {
                 $tanggal = \Carbon\Carbon::create($this->tahun, $this->bulan, $i)->startOfDay();
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+
+                  if (!$hariKerjaAktif->contains($namaHari)) {
+                    continue;
+                }
 
                 // 2. Cek Libur atau tidak ada jadwal sama sekali hari itu
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalPerHari->has($namaHari)) {

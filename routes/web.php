@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MasterJamController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\OverrideLogController;
 use App\Http\Controllers\Admin\QrCodeGeneratorController;
+use App\Http\Controllers\Admin\HariKerjaController;
 
 // Controller Publik & QR Code
 use App\Http\Controllers\DisplayController;
@@ -109,6 +110,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('master-jam', [MasterJamController::class, 'index'])->name('master-jam.index');
 Route::get('master-jam/{hari}', [MasterJamController::class, 'edit'])->name('master-jam.edit');
 Route::put('master-jam/{hari}', [MasterJamController::class, 'update'])->name('master-jam.update');
+
+// --- Rute untuk Manajemen Hari Kerja ---
+Route::get('hari-kerja', [HariKerjaController::class, 'index'])->name('hari-kerja.index');
+    Route::put('hari-kerja', [HariKerjaController::class, 'update'])->name('hari-kerja.update');
 
     // Rute untuk halaman generator QR Code
 Route::get('qrcode-generator', [QrCodeGeneratorController::class, 'index'])->name('qrcode.generator.index');

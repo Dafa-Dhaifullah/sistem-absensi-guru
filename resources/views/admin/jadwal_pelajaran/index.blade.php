@@ -42,15 +42,14 @@
                                  <!-- Filter Hari -->
                                 <div>
                                     <x-input-label for="hari" :value="__('Filter Hari')" />
-                                    <select name="hari" id="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="">Semua Hari</option>
-                                        <option value="Senin" @if(request('hari') == 'Senin') selected @endif>Senin</option>
-                                        <option value="Selasa" @if(request('hari') == 'Selasa') selected @endif>Selasa</option>
-                                        <option value="Rabu" @if(request('hari') == 'Rabu') selected @endif>Rabu</option>
-                                        <option value="Kamis" @if(request('hari') == 'Kamis') selected @endif>Kamis</option>
-                                        <option value="Jumat" @if(request('hari') == 'Jumat') selected @endif>Jumat</option>
-                                        <option value="Sabtu" @if(request('hari') == 'Sabtu') selected @endif>Sabtu</option>
-                                    </select>
+                                    <select name="hari" id="hari">
+    <option value="">-- Pilih Hari --</option>
+    @foreach ($hariAktif as $hari)
+        <option value="{{ $hari }}" {{ (old('hari', $jadwal->hari ?? '') == $hari) ? 'selected' : '' }}>
+            {{ $hari }}
+        </option>
+    @endforeach
+</select>
                                 </div>
                             </div>
                              <div class="flex items-center gap-4 mt-4">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\JadwalPiket;
 use App\Models\User;
+use App\Models\MasterHariKerja;
 use Illuminate\Http\Request;
 
 class JadwalPiketController extends Controller
@@ -25,7 +26,9 @@ class JadwalPiketController extends Controller
                                 return $group->groupBy('sesi');
                             });
 
-        $hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $hari = MasterHariKerja::where('is_aktif', 1)
+                               ->orderBy('id', 'asc') // Urutkan berdasarkan ID (Senin=1, Selasa=2, dst)
+                               ->pluck('nama_hari'); 
         $sesi = ['Pagi', 'Siang'];
 
         return view('admin.jadwal_piket.index', compact('daftarGuruPiket', 'jadwalTersimpan', 'hari', 'sesi'));

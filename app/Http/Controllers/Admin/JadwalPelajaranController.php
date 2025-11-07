@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Imports\JadwalPelajaranImport;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use App\Models\MasterHariKerja;
 use App\Rules\JamKeRange;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Validators\ValidationException;
@@ -19,6 +20,7 @@ class JadwalPelajaranController extends Controller
     public function index(Request $request)
     {
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+         $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
         $query = JadwalPelajaran::with('user');
         if ($request->filled('search')) {
             $search = $request->search;
@@ -38,22 +40,28 @@ class JadwalPelajaranController extends Controller
         }
         $semuaJadwal = $query->latest()->paginate(15);
         $semuaJadwal->appends($request->query());
-        return view('admin.jadwal_pelajaran.index', compact('semuaJadwal', 'daftarGuru'));
+        return view('admin.jadwal_pelajaran.index', compact('semuaJadwal', 'daftarGuru', 'hariAktif'));
     }
 
     public function create()
     {
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
-        return view('admin.jadwal_pelajaran.create', ['daftarGuru' => $daftarGuru]);
+        $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+        
+        return view('admin.jadwal_pelajaran.create', [
+            'daftarGuru' => $daftarGuru,
+            'hariAktif' => $hariAktif // <-- 4. KIRIM KE VIEW
+        ]);
     }
 
   public function store(Request $request)
     {
+         $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
             'mata_pelajaran' => 'nullable|string|max:255',
             'kelas' => 'required|string|max:255',
-            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'hari' => ['required', Rule::in($hariAktif)],
             'jam_ke' => 'required|array',
             'jam_ke.*' => 'required|integer|min:1|max:10',
             'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
@@ -112,11 +120,12 @@ class JadwalPelajaranController extends Controller
      */
     public function update(Request $request, JadwalPelajaran $jadwalPelajaran)
     {
+         $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
             'mata_pelajaran' => 'nullable|string|max:255',
             'kelas' => 'required|string|max:255',
-            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'hari' => ['required', Rule::in($hariAktif)],
             'jam_ke' => 'required|integer|min:1|max:10',
             'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
         ]);
@@ -163,9 +172,11 @@ class JadwalPelajaranController extends Controller
     public function edit(JadwalPelajaran $jadwalPelajaran)
     {
         $daftarGuru = User::where('role', 'guru')->orderBy('name', 'asc')->get();
+         $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
         return view('admin.jadwal_pelajaran.edit', [
             'jadwal' => $jadwalPelajaran,
-            'daftarGuru' => $daftarGuru
+            'daftarGuru' => $daftarGuru,
+            'hariAktif' => $hariAktif
         ]);
     }
 
@@ -197,6 +208,8 @@ class JadwalPelajaranController extends Controller
         $guruByNip = User::where('role', 'guru')->whereNotNull('nip')->pluck('id', 'nip');
         $guruByUsername = User::where('role', 'guru')->pluck('id', 'username');
 
+        $hariAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
         // === TAHAP 1: VALIDASI FORMAT SETIAP BARIS ===
         foreach ($rows as $index => $row) {
             $rowNumber = $index + 2;
@@ -205,7 +218,7 @@ class JadwalPelajaranController extends Controller
                 'nip_guru' => ['nullable', Rule::exists('users', 'nip')->where('role', 'guru')],
                 'username_guru' => ['required_without:nip_guru', Rule::exists('users', 'username')->where('role', 'guru')],
                 'kelas' => 'required|string',
-                'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+                'hari' => ['required', Rule::in($hariAktif)],
                 'jam_ke' => ['required', new JamKeRange],
                 'tipe_blok' => 'required|in:Setiap Minggu,Hanya Minggu 1,Hanya Minggu 2',
             ]);

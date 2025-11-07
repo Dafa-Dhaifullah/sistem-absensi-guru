@@ -7,6 +7,7 @@ use App\Models\HariLibur;
 use App\Models\JadwalPelajaran;
 use App\Models\KalenderBlok;
 use App\Models\LaporanHarian;
+use App\Models\MasterHariKerja;
 use Carbon\Carbon; // Import Carbon
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -55,6 +56,8 @@ class LaporanSesiExport implements WithEvents
                   ->where('tanggal_selesai', '>=', $awalBulan);
         })->get();
 
+        $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
         $laporanPerSesi = collect();
 
         // --- 2. LOOPING PER GURU ---
@@ -70,6 +73,10 @@ class LaporanSesiExport implements WithEvents
                 $tanggal = $awalBulan->clone()->addDays($i - 1);
 
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+
+                 if (!$hariKerjaAktif->contains($namaHari)) {
+                    continue;
+                }
 
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
 

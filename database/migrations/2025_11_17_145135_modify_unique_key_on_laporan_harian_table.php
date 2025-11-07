@@ -13,9 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        // ==========================================================
-        // == REVISI BARU: Nonaktifkan Cek Foreign Key ==
-        // ==========================================================
+        
         Schema::disableForeignKeyConstraints();
 
         Schema::table('laporan_harian', function (Blueprint $table) {

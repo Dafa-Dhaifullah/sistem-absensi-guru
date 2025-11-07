@@ -14,13 +14,14 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         // Buat 1 user Admin
-        User::create([
+       User::firstOrCreate(
+        ['email' => 'admin@sekolah.id'], // Cek berdasarkan email
+        [
             'name' => 'Admin',
             'username' => 'admin', // Ini akan dipakai login
-            'email' => 'admin@sekolah.id',
             'password' => Hash::make('admin123'), // Ganti dengan password aman
             'role' => 'admin',
-            'email_verified_at' => now(), // (Opsional, agar terverifikasi)
+            'email_verified_at' => now(), 
         ]);
 
     }

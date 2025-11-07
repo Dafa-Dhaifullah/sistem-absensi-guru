@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\JadwalPelajaran;
 use App\Models\HariLibur;
 use App\Models\KalenderBlok;
+use App\Models\MasterHariKerja;
 use Maatwebsite\Excel\Concerns\FromCollection; 
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -64,12 +65,17 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
                   ->where('tanggal_selesai', '>=', $tanggalMulai);
         })->get();
         // ==========================================================
+
+        $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
             
         $laporanFinal = collect();
 
         foreach (Carbon::parse($tanggalMulai)->toPeriod($tanggalSelesai) as $tanggal) {
             if ($tanggal->isFuture()) break;
             $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+              if (!$hariKerjaAktif->contains($namaHari)) {
+                continue;
+            }
             if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalGuru->has($namaHari)) {
                 continue;
             }
