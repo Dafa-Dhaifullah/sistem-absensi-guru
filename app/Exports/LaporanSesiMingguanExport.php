@@ -121,11 +121,7 @@ class LaporanSesiMingguanExport implements WithEvents
                 // --- 4. LOOPING PER BLOK (CEK KEHADIRAN) ---
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
-                    
-                    // ==========================================================
-                    // ## PERBAIKAN BUG KRITIS ADA DI SINI ##
-                    // Tambahkan ->where('tanggal', $tanggal)
-                    // ==========================================================
+                   
                     $laporan = $guru->laporanHarian
                         ->where('jadwal_pelajaran_id', $jadwalPertamaId)
                         ->where('tanggal', $tanggal) // Filter berdasarkan hari
@@ -176,7 +172,7 @@ class LaporanSesiMingguanExport implements WithEvents
                 $sheet = $event->sheet->getDelegate();
                 
                 $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI MINGGUAN');
+                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER JADWAL - MINGGUAN');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 

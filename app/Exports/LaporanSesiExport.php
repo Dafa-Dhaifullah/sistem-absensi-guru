@@ -120,10 +120,6 @@ class LaporanSesiExport implements WithEvents
                 }
                 if ($tempBlock) $jadwalBlok->push($tempBlock); 
 
-                // ==========================================================
-                // ## PERBAIKAN LOGIKA PERHITUNGAN ##
-                // ==========================================================
-
                 // 1. Total Sesi Wajib dihitung untuk SEMUA HARI (termasuk masa depan)
                 $totalSesiWajib += $jadwalBlok->count();
 
@@ -193,7 +189,7 @@ class LaporanSesiExport implements WithEvents
 
                 // --- 1. MEMBUAT JUDUL ---
                 $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI SESI - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
+                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER JADWAL - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
