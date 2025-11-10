@@ -26,4 +26,9 @@ class OverrideLog extends Model
     {
         return $this->belongsTo(JadwalPelajaran::class, 'jadwal_pelajaran_id');
     }
+    public function guru()
+{
+    // Relasi langsung ke tabel 'users' melalui 'guru_id'
+    return $this->belongsTo(User::class, 'guru_id');
+}
 }

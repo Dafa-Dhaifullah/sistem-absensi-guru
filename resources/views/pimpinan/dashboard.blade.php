@@ -71,19 +71,29 @@
                 </div>
             </div>
 
-            @if(isset($guruWarning) && !$guruWarning->isEmpty())
-            <div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-800 rounded-r-lg" role="alert">
-                <h4 class="font-bold">Peringatan Akumulasi Ketidakhadiran (Bulan Ini)</h4>
-                <p class="text-sm">Guru berikut telah mencapai atau melebihi batas maksimal ketidakhadiran harian (Sakit + Izin + Alpa >= 4 hari):</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    @foreach($guruWarning as $guru)
-                        <li>
-                            <strong>{{ $guru->name }}</strong> 
-                            (Total {{ $guru->total_tidak_hadir }} hari tidak hadir)
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+           @if(isset($guruWarning) && !$guruWarning->isEmpty())
+                <div class="p-5 bg-yellow-50 border border-yellow-300 rounded-xl shadow-sm" role="alert">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-yellow-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-yellow-800">Peringatan Akumulasi Ketidakhadiran (Bulan Ini)</h4>
+                            <ul class="mt-2 list-disc list-inside text-sm text-yellow-700 space-y-1">
+                                @foreach($guruWarning as $guru)
+                                    <li>
+                                        <strong>{{ $guru->name }}</strong> 
+                                        @if($guru->total_tidak_hadir == $batasAbsen)
+                                            telah <span class="font-semibold">mencapai batas maksimal</span> ketidakhadiran ({{ $guru->total_tidak_hadir }} kali).
+                                        @else
+                                            telah <span class="font-bold">melebihi batas maksimal</span> ketidakhadiran (total {{ $guru->total_tidak_hadir }} kali).
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             @endif
 
             <!-- Pintasan Menu Laporan -->

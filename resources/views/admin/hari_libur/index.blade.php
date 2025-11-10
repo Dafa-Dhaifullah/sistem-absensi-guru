@@ -48,7 +48,7 @@
                                                                 $refs.form{{ $libur->id }}.submit();
                                                             }
                                                         })
-                                                    " class="text-red-600 hover:text-red-900 ml-2">Hapus</button>
+                                                    " class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-red-600 text-white hover:bg-red-700">Hapus</button>
                                                 </form>
                                             </div>
                                         </td>

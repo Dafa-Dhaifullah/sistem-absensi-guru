@@ -62,7 +62,7 @@
                                 </div>
 
                                 <div>
-                                    <x-input-label for="mata_pelajaran" :value="__('Mata Pelajaran (Opsional)')" />
+                                    <x-input-label for="mata_pelajaran" :value="__('Mata Pelajaran')" />
                                     <x-text-input id="mata_pelajaran" class="block mt-1 w-full" type="text" name="mata_pelajaran" :value="old('mata_pelajaran')" placeholder="Contoh: Matematika" />
                                     <x-input-error :messages="$errors->get('mata_pelajaran')" class="mt-2" />
                                 </div>

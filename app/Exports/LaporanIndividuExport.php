@@ -150,7 +150,7 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            ['Laporan Kehadiran Individu (per Sesi Mengajar)'],
+            ['Laporan Kehadiran Individu (per Jadwal Mengajar)'],
             ['Guru: ' . $this->namaGuru],
             ['Periode: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y')],
             [], 

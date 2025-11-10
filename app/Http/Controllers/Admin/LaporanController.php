@@ -442,7 +442,7 @@ class LaporanController extends Controller
         ]);
     }
 
-   public function mingguanSesi(Request $request)
+  public function mingguanSesi(Request $request)
     {
         $today = now('Asia/Jakarta')->startOfDay();
         $tanggalSelesaiInput = $request->input('tanggal_selesai', $today->toDateString());
@@ -464,25 +464,34 @@ class LaporanController extends Controller
             ->pluck('tanggal')
             ->map(fn($dateString) => \Carbon\Carbon::parse($dateString)->toDateString());
 
-        // --- OPTIMASI (N+1): Ambil data KalenderBlok 1x ---
         $kalenderBlokMingguIni = KalenderBlok::where(function ($query) use ($awalMinggu, $akhirMinggu) {
             $query->where('tanggal_mulai', '<=', $akhirMinggu)
                   ->where('tanggal_selesai', '>=', $awalMinggu);
         })->get();
-        // --- Akhir Optimasi ---
 
         $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
 
         $laporanPerSesi = collect();
 
+        // --- 2. LOOPING PER GURU ---
         foreach ($semuaGuru as $guru) {
-            // ... (Inisialisasi total) ...
+            
+            // ==========================================================
+            // ## PERBAIKAN 1: TAMBAHKAN INISIALISASI INI ##
+            // ==========================================================
+            $totalSesiWajib = 0; $totalHadir = 0; $totalTepatWaktu = 0; $totalTerlambat = 0;
+            $totalSakit = 0; $totalIzin = 0; $totalAlpa = 0; $totalDL = 0;
+
             $jadwalHariGuru = $guru->jadwalPelajaran->groupBy('hari');
 
+            // --- 3. LOOPING PER HARI ---
             foreach ($tanggalRange as $tanggal) {
                 $tanggal = $tanggal->startOfDay(); 
                 
-                if ($tanggal->gt($today)) break; 
+                // ==========================================================
+                // ## PERBAIKAN 2: HAPUS 'break;' DARI SINI ##
+                // if ($tanggal->gt($today)) break; // <-- HAPUS BARIS INI
+                // ==========================================================
                 
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
 
@@ -491,16 +500,13 @@ class LaporanController extends Controller
                 }
                 if ($hariLibur->contains($tanggal->toDateString()) || !$jadwalHariGuru->has($namaHari)) continue;
 
-                // --- OPTIMASI: Cari tipe minggu dari koleksi ---
+                // --- (Logika Tipe Blok tidak berubah) ---
                 $kalenderBlokHariIni = $kalenderBlokMingguIni->firstWhere(function ($blok) use ($tanggal) {
-                    // Gunakan perbandingan Carbon yang kuat
                     $mulai = Carbon::parse($blok->tanggal_mulai)->startOfDay();
                     $selesai = Carbon::parse($blok->tanggal_selesai)->startOfDay();
                     return $tanggal->gte($mulai) && $tanggal->lte($selesai);
                 });
                 $tipeMinggu = $kalenderBlokHariIni->tipe_minggu ?? 'Reguler';
-                // --- Akhir Optimasi ---
-                
                 
                 $nomorMinggu = trim(str_replace('Minggu', '', $tipeMinggu)); 
                 $jadwalMentahHariIni = $jadwalHariGuru->get($namaHari);
@@ -513,9 +519,8 @@ class LaporanController extends Controller
                     if ($tipeBlokJadwal == $tipeMinggu) return true;
                     return false;
                 })->sortBy('jam_ke');
-                // ==========================================================
                 
-                // --- Logika Pengelompokan Blok ---
+                // --- (Logika Grouping Blok tidak berubah) ---
                 $tempBlock = null;
                 $jadwalBlok = collect();
                 foreach ($jadwalUntukHariIni as $jadwal) {
@@ -527,18 +532,26 @@ class LaporanController extends Controller
                     }
                 }
                 if ($tempBlock) $jadwalBlok->push($tempBlock);
-                // --- Akhir Logika Blok ---
 
+                // ==========================================================
+                // ## INI ADALAH LOGIKA YANG BENAR ##
+                // ==========================================================
+
+                // 1. Total Sesi Wajib dihitung untuk SEMUA HARI (termasuk masa depan)
                 $totalSesiWajib += $jadwalBlok->count();
 
-                // --- 4. LOOPING PER BLOK (CEK KEHADIRAN) ---
+                // 2. JANGAN LANJUTKAN jika tanggal ini ada di masa depan
+                if ($tanggal->gt($today)) {
+                    continue; 
+                }
+
+                // 3. Status (Hadir/Alpa/dll) HANYA dihitung untuk hari ini ke belakang
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
 
-                  
                     $laporan = $guru->laporanHarian
                         ->where('jadwal_pelajaran_id', $jadwalPertamaId)
-                        ->where('tanggal', $tanggal) // Filter berdasarkan hari
+                        ->where('tanggal', $tanggal) 
                         ->first();
 
                     if ($laporan) {
@@ -575,8 +588,8 @@ class LaporanController extends Controller
 
         return view('admin.laporan.mingguan_sesi', [
             'laporanPerSesi' => $laporanPerSesi,
-            'tanggalMulai' => $tanggalMulaiInput, // Kirim tanggal input asli
-            'tanggalSelesai' => $tanggalSelesaiInput, // Kirim tanggal input asli
+            'tanggalMulai' => $tanggalMulaiInput,
+            'tanggalSelesai' => $tanggalSelesaiInput,
         ]);
     }
     

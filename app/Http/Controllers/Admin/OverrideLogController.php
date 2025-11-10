@@ -11,7 +11,7 @@ class OverrideLogController extends Controller
 {
     public function index()
     {
-        $logs = OverrideLog::with(['piket', 'jadwalPelajaran.user'])
+        $logs = OverrideLog::with(['piket', 'guru', 'jadwalPelajaran'])
                             ->latest()
                             ->paginate(20);
 

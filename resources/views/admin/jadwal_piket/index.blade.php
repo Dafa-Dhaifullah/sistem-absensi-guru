@@ -5,9 +5,6 @@
         </h2>
     </x-slot>
 
-    <!-- ============================================== -->
-    <!-- == LOGIKA ALPINE.JS UNTUK MODAL & PENCARIAN == -->
-    <!-- ============================================== -->
     <div 
         x-data="{
             modalOpen: false,
@@ -77,8 +74,8 @@
                                                 @endforelse
                                             </div>
                                             <button @click="openModal('{{ $h }}', '{{ $s }}', '{{ $selectedUserIds }}')"
-                                                    class="flex-shrink-0 text-xs text-indigo-600 hover:text-indigo-900 font-medium ml-4">
-                                                [Edit Tim]
+                                                    class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-indigo-500 text-white hover:bg-indigo-600">
+                                                Edit Tim
                                             </button>
                                         </div>
                                     </td>

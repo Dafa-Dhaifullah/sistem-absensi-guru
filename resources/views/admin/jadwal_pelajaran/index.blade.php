@@ -42,7 +42,7 @@
                                  <!-- Filter Hari -->
                                 <div>
                                     <x-input-label for="hari" :value="__('Filter Hari')" />
-                                    <select name="hari" id="hari">
+                                    <select name="hari" id="hari" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
     <option value="">-- Pilih Hari --</option>
     @foreach ($hariAktif as $hari)
         <option value="{{ $hari }}" {{ (old('hari', $jadwal->hari ?? '') == $hari) ? 'selected' : '' }}>
@@ -82,7 +82,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $jadwal->mata_pelajaran ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $jadwal->tipe_blok }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.jadwal-pelajaran.edit', $jadwal->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                            <a href="{{ route('admin.jadwal-pelajaran.edit', $jadwal->id) }}"  class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-indigo-500 text-white hover:bg-indigo-600">Edit</a>
                                             
                                             <div x-data class="inline">
                                                 <form x-ref="form{{ $jadwal->id }}" action="{{ route('admin.jadwal-pelajaran.destroy', $jadwal->id) }}" method="POST" class="inline">
@@ -103,7 +103,7 @@
                                                                 $refs.form{{ $jadwal->id }}.submit();
                                                             }
                                                         })
-                                                    " class="text-red-600 hover:text-red-900 ml-2">Hapus</button>
+                                                    " class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-red-600 text-white hover:bg-red-700">Hapus</button>
                                                 </form>
                                             </div>
                                             </td>

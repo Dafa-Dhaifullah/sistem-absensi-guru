@@ -71,61 +71,77 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{{ $user->role }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->no_wa ?? '-' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div class="flex space-x-4 items-center">
-                                                 <div>
-                                                    <a href="{{ route('admin.pengguna.show', $user->id) }}" class="text-gray-600 hover:text-gray-900">Detail</a>
-                                                </div>
-                                                <div>
-                                                    <a href="{{ route('admin.pengguna.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                                </div>
-                                                
-                                                <div x-data>
-                                                    <form x-ref="resetForm{{ $user->id }}" action="{{ route('admin.pengguna.resetPassword', $user->id) }}" method="POST">
-                                                        @csrf
-                                                        <button type="button" @click.prevent="
-                                                            Swal.fire({
-                                                                title: 'Yakin reset password?',
-                                                                text: 'Password pengguna ini akan diubah ke default!',
-                                                                icon: 'warning',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor: '#3085d6',
-                                                                cancelButtonColor: '#d33',
-                                                                confirmButtonText: 'Ya, reset!',
-                                                                cancelButtonText: 'Batal'
-                                                            }).then((result) => {
-                                                                if (result.isConfirmed) {
-                                                                    $refs.resetForm{{ $user->id }}.submit();
-                                                                }
-                                                            })
-                                                        " class="text-yellow-600 hover:text-yellow-900">Reset Pass</button>
-                                                    </form>
-                                                </div>
-                                                
-                                                @if(Auth::id() !== $user->id)
-                                                <div x-data>
-                                                    <form x-ref="deleteForm{{ $user->id }}" action="{{ route('admin.pengguna.destroy', $user->id) }}" method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="button" @click.prevent="
-                                                            Swal.fire({
-                                                                title: 'Yakin hapus?',
-                                                                text: 'Data pengguna ini akan dihapus!',
-                                                                icon: 'warning',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor: '#d33',
-                                                                cancelButtonColor: '#3085d6',
-                                                                confirmButtonText: 'Ya, hapus!',
-                                                                cancelButtonText: 'Batal'
-                                                            }).then((result) => {
-                                                                if (result.isConfirmed) {
-                                                                    $refs.deleteForm{{ $user->id }}.submit();
-                                                                }
-                                                            })
-                                                        " class="text-red-600 hover:text-red-900">Hapus</button>
-                                                    </form>
-                                                </div>
-                                                @endif
-                                            </div>
+                                            <div class="flex space-x-2 items-center">
+    
+    {{-- Tombol Detail (Biru/Info) --}}
+    <div>
+        <a href="{{ route('admin.pengguna.show', $user->id) }}" 
+           class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-blue-500 text-white hover:bg-blue-600">
+           Detail
+        </a>
+    </div>
+
+    {{-- Tombol Edit (Indigo/Edit) --}}
+    <div>
+        <a href="{{ route('admin.pengguna.edit', $user->id) }}" 
+           class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-indigo-500 text-white hover:bg-indigo-600">
+           Edit
+        </a>
+    </div>
+    
+    {{-- Tombol Reset Pass (Kuning/Warning) --}}
+    <div x-data>
+        <form x-ref="resetForm{{ $user->id }}" action="{{ route('admin.pengguna.resetPassword', $user->id) }}" method="POST">
+            @csrf
+            <button type="button" @click.prevent="
+                Swal.fire({
+                    title: 'Yakin reset password?',
+                    text: 'Password pengguna ini akan diubah ke default!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, reset!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $refs.resetForm{{ $user->id }}.submit();
+                    }
+                })
+            " class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-yellow-400 text-yellow-900 hover:bg-yellow-500">
+                Reset Pass
+            </button>
+        </form>
+    </div>
+    
+    {{-- Tombol Hapus (Merah/Danger) --}}
+    @if(Auth::id() !== $user->id)
+    <div x-data>
+        <form x-ref="deleteForm{{ $user->id }}" action="{{ route('admin.pengguna.destroy', $user->id) }}" method="POST">
+            @csrf
+            @method('DELETE')
+            <button type="button" @click.prevent="
+                Swal.fire({
+                    title: 'Yakin hapus?',
+                    text: 'Data pengguna ini akan dihapus!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $refs.deleteForm{{ $user->id }}.submit();
+                    }
+                })
+            " class="inline-block px-3 py-1 rounded-md text-xs font-medium transition-colors duration-150 bg-red-600 text-white hover:bg-red-700">
+                Hapus
+            </button>
+        </form>
+    </div>
+    @endif
+</div>
                                             </td>
                                     </tr>
                                 @empty

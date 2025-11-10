@@ -31,7 +31,7 @@
                                             {{ $log->created_at->isoFormat('dddd, D MMM YYYY - HH:mm') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $log->piket->name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->jadwalPelajaran->user->name ?? '(Guru Terhapus)' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $log->guru->name ?? ($log->jadwalPelajaran->user->name ?? 'Guru Dihapus') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             @if($log->jadwalPelajaran)
                                                 <!-- REVISI: Tampilkan blok jam -->
