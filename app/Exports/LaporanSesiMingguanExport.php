@@ -165,62 +165,74 @@ class LaporanSesiMingguanExport implements WithEvents
         return $laporanPerSesi;
     }
 
-    public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-                
-                $sheet->mergeCells('A1:J1');
-                $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER JADWAL - MINGGUAN');
-                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-                $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+   public function registerEvents(): array
+{
+    return [
+        AfterSheet::class => function (AfterSheet $event) {
+            $sheet = $event->sheet->getDelegate();
 
-                $sheet->mergeCells('A2:J2');
-                $sheet->setCellValue('A2', 'PERIODE: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
-                $sheet->getStyle('A2')->getFont()->setItalic(true);
-                $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            // === SETUP HALAMAN A4 LANDSCAPE & FIT TO WIDTH ===
+            $pageSetup = $sheet->getPageSetup();
+            $pageSetup->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+            $pageSetup->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
+            // Fit 1 halaman lebar, tinggi bebas
+            $pageSetup->setFitToWidth(1)->setFitToHeight(0);
+            // Center saat print (opsional)
+            $pageSetup->setHorizontalCentered(true);
+            // Margin rapat agar muat
+            $sheet->getPageMargins()->setTop(0.4)->setBottom(0.4)->setLeft(0.4)->setRight(0.4);
 
-                $headings = [
-                    'Nama Guru', 'Total Jadwal', 'Hadir', 'Terlambat',
-                    'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
-                ];
-                $sheet->fromArray($headings, null, 'A4');
-                $sheet->getStyle('A4:J4')->getFont()->setBold(true);
-                $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
-                $sheet->getStyle('A4:J4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            // === KONTEN ASLI ANDA (tanpa perubahan) ===
+            $sheet->mergeCells('A1:J1');
+            $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER JADWAL - MINGGUAN');
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+            $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                // --- 3. MENGISI DATA ---
-                if ($this->laporanData->isNotEmpty()) {
-                    $sheet->fromArray($this->laporanData->toArray(), null, 'A5');
-                    $lastRow = count($this->laporanData) + 4;
-                } else {
-                    $lastRow = 4;
-                }
+            $sheet->mergeCells('A2:J2');
+            $sheet->setCellValue('A2', 'PERIODE: ' . Carbon::parse($this->tanggalMulai)->isoFormat('D MMM Y') . ' s/d ' . Carbon::parse($this->tanggalSelesai)->isoFormat('D MMM Y'));
+            $sheet->getStyle('A2')->getFont()->setItalic(true);
+            $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                // --- 4. STYLING ---
-                if ($lastRow > 4) {
-                    $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                    $sheet->getStyle("B5:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle("A5:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                    $sheet->getStyle("I5:J{$lastRow}")->getFont()->setBold(true);
+            $headings = [
+                'Nama Guru', 'Total Jadwal', 'Hadir', 'Terlambat',
+                'Sakit', 'Izin', 'Alpa', 'Dinas Luar', '% Kehadiran', '% Ketepatan Waktu'
+            ];
+            $sheet->fromArray($headings, null, 'A4');
+            $sheet->getStyle('A4:J4')->getFont()->setBold(true);
+            $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
+            $sheet->getStyle('A4:J4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    // ==========================================================
-                    // ## PERBAIKAN FORMAT PERSENTASE ##
-                    // ==========================================================
-                    $sheet->getStyle("I5:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_PERCENTAGE_00);
-                    // ==========================================================
+            // --- 3. MENGISI DATA ---
+            if ($this->laporanData->isNotEmpty()) {
+                $sheet->fromArray($this->laporanData->toArray(), null, 'A5');
+                $lastRow = count($this->laporanData) + 4;
+            } else {
+                $lastRow = 4;
+            }
 
-                } else {
-                    $sheet->getStyle("A4:J4")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                }
-                
-                $sheet->getColumnDimension('A')->setAutoSize(true);
-                foreach (range('B', 'J') as $columnID) {
-                    $sheet->getColumnDimension($columnID)->setAutoSize(true);
-                }
-            },
-        ];
-    }
+            // --- 4. STYLING ---
+            if ($lastRow > 4) {
+                $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->getStyle("B5:J{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("A5:A{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle("I5:J{$lastRow}")->getFont()->setBold(true);
+
+                // Format persentase
+                $sheet->getStyle("I5:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_PERCENTAGE_00);
+            } else {
+                $sheet->getStyle("A4:J4")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            }
+
+            $sheet->getColumnDimension('A')->setAutoSize(true);
+            foreach (range('B', 'J') as $columnID) {
+                $sheet->getColumnDimension($columnID)->setAutoSize(true);
+            }
+
+            // === BATASI AREA CETAK SUPAYA PAS A4 ===
+            $sheet->getPageSetup()->setPrintArea("A1:J{$lastRow}");
+        },
+    ];
+}
+
 }
 

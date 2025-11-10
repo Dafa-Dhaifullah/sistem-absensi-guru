@@ -187,6 +187,24 @@ class LaporanSesiExport implements WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
+                // === SETUP HALAMAN A4 LANDSCAPE & FIT TO WIDTH ===
+$pageSetup = $sheet->getPageSetup();
+$pageSetup->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+$pageSetup->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
+// Pastikan isi menyesuaikan lebar 1 halaman (tinggi bebas)
+$pageSetup->setFitToWidth(1)->setFitToHeight(0);
+// Rata tengah saat cetak
+$pageSetup->setHorizontalCentered(true);
+$pageSetup->setVerticalCentered(false);
+
+// Margin agar muat maksimal di A4
+$sheet->getPageMargins()
+    ->setTop(0.4)
+    ->setBottom(0.4)
+    ->setLeft(0.4)
+    ->setRight(0.4);
+
+
                 // --- 1. MEMBUAT JUDUL ---
                 $sheet->mergeCells('A1:J1');
                 $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI PER JADWAL - BULAN ' . strtoupper($this->namaBulan) . ' ' . $this->tahun);
@@ -224,10 +242,12 @@ class LaporanSesiExport implements WithEvents
                      $sheet->getStyle("A3:J3")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 }
                 
+                
                 $sheet->getColumnDimension('A')->setAutoSize(true);
                 foreach (range('B', 'J') as $columnID) {
                     $sheet->getColumnDimension($columnID)->setAutoSize(true);
                 }
+                $sheet->getPageSetup()->setPrintArea("A1:J{$lastRow}");
             },
         ];
     }

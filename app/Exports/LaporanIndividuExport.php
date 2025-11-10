@@ -203,26 +203,42 @@ class LaporanIndividuExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
-    public function styles(Worksheet $sheet)
-    {
-        $sheet->mergeCells('A1:I1');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->mergeCells('A2:I2');
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->mergeCells('A3:I3');
-        $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+   public function styles(Worksheet $sheet)
+{
+    $sheet->mergeCells('A1:I1');
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->mergeCells('A2:I2');
+    $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
+    $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->mergeCells('A3:I3');
+    $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(12);
+    $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->getStyle('A5:I5')->getFont()->setBold(true);
-        $sheet->getStyle('A5:I5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
-        $sheet->getStyle('A5:I5')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        
-        $lastRow = $sheet->getHighestRow();
-        $sheet->getStyle("A6:I{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        
-        $sheet->getStyle("C6:C{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle("G6:G{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    }
+    $sheet->getStyle('A5:I5')->getFont()->setBold(true);
+    $sheet->getStyle('A5:I5')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEDEDED');
+    $sheet->getStyle('A5:I5')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+    
+    $lastRow = $sheet->getHighestRow();
+    $sheet->getStyle("A6:I{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+    
+    $sheet->getStyle("C6:C{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->getStyle("G6:G{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+    // ===== A4 LANDSCAPE & FIT TO WIDTH =====
+    $pageSetup = $sheet->getPageSetup();
+    $pageSetup->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+    $pageSetup->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
+    $pageSetup->setFitToWidth(1)->setFitToHeight(0); // 1 halaman lebar, tinggi otomatis
+    $pageSetup->setHorizontalCentered(true);
+
+    // Margin agar muat rapi
+    $sheet->getPageMargins()
+        ->setTop(0.4)->setBottom(0.4)
+        ->setLeft(0.4)->setRight(0.4);
+
+    // Batasi area cetak agar pas A4
+    $sheet->getPageSetup()->setPrintArea("A1:I{$lastRow}");
+}
+
 }

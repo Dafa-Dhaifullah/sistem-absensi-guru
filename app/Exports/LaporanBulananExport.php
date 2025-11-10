@@ -123,6 +123,20 @@ class LaporanBulananExport implements WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) use ($namaBulan, $tahun, $bulan, $daysInMonth, $semuaGuru, $hariKerjaEfektif) {
                 $sheet = $event->sheet->getDelegate();
+                // === A4 LANDSCAPE & FIT ===
+$pageSetup = $sheet->getPageSetup();
+$pageSetup->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE);
+$pageSetup->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4);
+// Fit 1 halaman lebar, tinggi otomatis
+$pageSetup->setFitToWidth(1)->setFitToHeight(0);
+// (opsional) center secara horizontal saat print
+$pageSetup->setHorizontalCentered(true);
+
+// Margin rapat agar muat
+$sheet->getPageMargins()
+    ->setTop(0.5)->setBottom(0.5)
+    ->setLeft(0.4)->setRight(0.4);
+
                 $today = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
                 
                 // --- 1. HEADER KOMPLEKS ---
@@ -208,7 +222,7 @@ class LaporanBulananExport implements WithEvents
                 $sheet->setCellValue("{$iCol}4", 'I');
                 $sheet->setCellValue("{$aCol}4", 'A');
                 $sheet->setCellValue("{$dlCol}4", 'DL');
-                $sheet->setCellValue("{$jumlahCol}4", 'JML TDK HADIR');
+                $sheet->setCellValue("{$jumlahCol}4", 'Tdk Hadir');
                 $sheet->setCellValue("{$persenTidakHadirCol}4", '% Tdk Hadir');
                 $sheet->setCellValue("{$persenHadirCol}4", '% Hadir');
                 $sheet->mergeCells("{$sCol}4:{$sCol}5");
@@ -222,6 +236,9 @@ class LaporanBulananExport implements WithEvents
                 // --- 5. STYLING ---
                 $lastRow = count($semuaGuru) + 5;
                 $fullRange = "A1:{$lastCol}{$lastRow}";
+                // === Batas area cetak (biar pas ke A4) ===
+$sheet->getPageSetup()->setPrintArea("A1:{$lastCol}{$lastRow}");
+
                 
                 $sheet->getStyle($fullRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 $sheet->getStyle($fullRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
