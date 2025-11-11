@@ -19,7 +19,7 @@ class AdminUserSeeder extends Seeder
         [
             'name' => 'Admin',
             'username' => 'admin', // Ini akan dipakai login
-            'password' => Hash::make('admin123'), // Ganti dengan password aman
+            'password' => Hash::make('smkn6garut'), // Ganti dengan password aman
             'role' => 'admin',
             'email_verified_at' => now(), 
         ]);
