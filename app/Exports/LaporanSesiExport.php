@@ -8,6 +8,7 @@ use App\Models\JadwalPelajaran;
 use App\Models\KalenderBlok;
 use App\Models\LaporanHarian;
 use App\Models\MasterHariKerja;
+use App\Models\MasterJamPelajaran;
 use Carbon\Carbon; // Import Carbon
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -41,6 +42,7 @@ class LaporanSesiExport implements WithEvents
         $awalBulan = Carbon::create($this->tahun, $this->bulan, 1)->startOfMonth();
         $akhirBulan = $awalBulan->clone()->endOfMonth();
         $today = now('Asia/Jakarta')->startOfDay();
+        $now = now('Asia/Jakarta');
 
         $semuaGuru = User::where('role', 'guru')
             ->with(['jadwalPelajaran', 'laporanHarian' => function ($query) use ($awalBulan, $akhirBulan) {
@@ -57,6 +59,10 @@ class LaporanSesiExport implements WithEvents
         })->get();
 
         $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
+        $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
 
         $laporanPerSesi = collect();
 
@@ -153,7 +159,16 @@ class LaporanSesiExport implements WithEvents
                             default: $totalAlpa++; break;
                         }
                     } else {
-                        $totalAlpa++;
+                         if ($tanggal->isBefore($today)) {
+                            $totalAlpa++;
+                        } elseif ($tanggal->is($today)) {
+                            // $namaHari sudah didefinisikan di loop atas (baris 90)
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $totalAlpa++;
+                            }
+                            // Jika tidak, biarkan 0 (masih "Belum Absen")
+                        }
                     }
                 }
                 // ==========================================================

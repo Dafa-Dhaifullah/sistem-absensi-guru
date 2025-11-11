@@ -30,6 +30,7 @@ class LaporanController extends Controller
         $tahun = (int) $request->input('tahun', now()->year);
         $daysInMonth = Carbon::createFromDate($tahun, $bulan)->daysInMonth;
         $today = now('Asia/Jakarta')->startOfDay(); 
+        $now = now('Asia/Jakarta');
         $awalBulan = Carbon::create($tahun, $bulan, 1)->startOfMonth();
         $akhirBulan = $awalBulan->clone()->endOfMonth();
 
@@ -53,6 +54,9 @@ class LaporanController extends Controller
         })->get();
 
        $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+        $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
 
         $hariKerjaEfektif = [];
         foreach($semuaGuru as $guru) {
@@ -63,9 +67,7 @@ class LaporanController extends Controller
                 $tanggal = Carbon::create($tahun, $bulan, $i)->startOfDay();
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
 
-                // ==========================================================
-                // 2. Tambahkan pengecekan apakah hari ini (Senin, Sabtu, dll) aktif
-                // ==========================================================
+              
                 if (!$hariKerjaAktif->contains($namaHari)) {
                     continue;
                 }
@@ -104,9 +106,7 @@ class LaporanController extends Controller
             }
             $hariKerjaEfektif[$guru->id] = $hariKerjaList;
         }
-        // ==========================================================
-        // == AKHIR PERBAIKAN ==
-        // ==========================================================
+        
 
         $laporanHarianTeringkas = collect();
         $summaryTotal = [];
@@ -145,11 +145,17 @@ class LaporanController extends Controller
                         }
                     } else {
                         if ($tanggal->isBefore($today)) {
-                            $statusFinal = 'A'; 
-                            $totalAlpa++;
-                        } else {
-                            $statusFinal = '-'; 
-                        }
+                            $statusFinal = 'A'; $totalAlpa++;
+                             } elseif ($tanggal->is($today)) {
+                                $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                                if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                    $statusFinal = 'A'; $totalAlpa++;
+                                } else {
+                                    $statusFinal = '-'; // Masih "Belum Absen"
+                                }
+                            } else {
+                                $statusFinal = '-'; // Untuk masa depan
+                            }
                     }
                 }
                 $dataHarian[$i] = $statusFinal;
@@ -174,6 +180,7 @@ class LaporanController extends Controller
         $bulan = (int) $request->input('bulan', now()->month);
         $tahun = (int) $request->input('tahun', now()->year);
         $today = now('Asia/Jakarta')->startOfDay(); 
+        $now = now('Asia/Jakarta');
 
         $awalBulan = Carbon::create($tahun, $bulan, 1)->startOfMonth();
         $akhirBulan = $awalBulan->clone()->endOfMonth();
@@ -193,6 +200,10 @@ class LaporanController extends Controller
         })->get();
 
         $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
+        $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
 
         $laporanPerSesi = collect();
 
@@ -279,9 +290,15 @@ class LaporanController extends Controller
                             default: $totalAlpa++; break;
                         }
                     } else {
-                        // Hanya hitung Alpa jika tanggalnya sudah lewat (sama dengan $today atau sebelumnya)
-                        // (Cek $tanggal->gt($today) di atas sudah menangani ini)
-                        $totalAlpa++;
+                        if ($tanggal->isBefore($today)) {
+                            $totalAlpa++;
+                         } elseif ($tanggal->is($today)) {
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $totalAlpa++;
+                            }
+                            // Jika belum, jangan hitung (masih "Belum Absen")
+                        }
                     }
                 }
                 // ==========================================================
@@ -310,6 +327,7 @@ class LaporanController extends Controller
     public function mingguan(Request $request)
     {
         $today = now('Asia/Jakarta')->startOfDay();
+        $now = now('Asia/Jakarta');
         $tanggalSelesai = $request->input('tanggal_selesai', $today->toDateString());
         $tanggalMulai = $request->input('tanggal_mulai', $today->copy()->subDays(6)->toDateString());
 
@@ -332,6 +350,10 @@ class LaporanController extends Controller
             $query->where('tanggal_mulai', '<=', $tanggalSelesai)
                   ->where('tanggal_selesai', '>=', $tanggalMulai);
         })->get();
+
+         $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
 
         $hariKerjaEfektif = [];
         foreach($semuaGuru as $guru) {
@@ -419,8 +441,16 @@ class LaporanController extends Controller
                         if ($tanggal->isBefore($today)) {
                             $statusFinal = 'A'; 
                             $totalAlpa++;
+                        } elseif ($tanggal->is($today)) {
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $statusFinal = 'A';
+                                $totalAlpa++;
+                            } else {
+                                $statusFinal = '-'; // Masih "Belum Absen"
+                            }
                         } else {
-                            $statusFinal = '-';
+                            $statusFinal = '-'; // Masa depan
                         }
                     }
                 }
@@ -445,6 +475,7 @@ class LaporanController extends Controller
   public function mingguanSesi(Request $request)
     {
         $today = now('Asia/Jakarta')->startOfDay();
+        $now = now('Asia/Jakarta');
         $tanggalSelesaiInput = $request->input('tanggal_selesai', $today->toDateString());
         $tanggalMulaiInput = $request->input('tanggal_mulai', $today->copy()->subDays(6)->toDateString());
 
@@ -470,6 +501,10 @@ class LaporanController extends Controller
         })->get();
 
         $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
+        $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
 
         $laporanPerSesi = collect();
 
@@ -567,7 +602,15 @@ class LaporanController extends Controller
                             default: $totalAlpa++; break;
                         }
                     } else {
-                        $totalAlpa++;
+                        if ($tanggal->isBefore($today)) {
+                             $totalAlpa++;
+                        } elseif ($tanggal->is($today)) {
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $totalAlpa++;
+                            }
+                            // Jika belum, jangan hitung (masih "Belum Absen")
+                        }
                     }
                 }
             } // End looping per hari
@@ -629,6 +672,7 @@ class LaporanController extends Controller
             $tanggalMulai = \Illuminate\Support\Carbon::parse($request->tanggal_mulai);
             $tanggalSelesai = \Illuminate\Support\Carbon::parse($request->tanggal_selesai);
             $today = now('Asia/Jakarta')->startOfDay();
+            $now = now('Asia/Jakarta');
 
             // 1. Ambil data yang relevan
             $laporanTersimpan = \App\Models\LaporanHarian::where('user_id', $guruTerpilih->id)
@@ -653,6 +697,10 @@ class LaporanController extends Controller
             // ==========================================================
             
             $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
+
+            $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                                ->groupBy('hari')
+                                ->pluck('jam_terakhir', 'hari');
             
             $laporanFinal = collect(); 
 
@@ -735,6 +783,22 @@ class LaporanController extends Controller
                         $logSesi->diabsen_oleh = $laporan->diabsen_oleh;
                         $logSesi->piket = $laporan->piket;
                     } else {
+                        $statusSesi = '-'; // Default status
+
+                        if ($tanggal->isBefore($today)) {
+                            // Jika hari sudah lewat, pasti Alpa
+                            $statusSesi = 'Alpa';
+                        } elseif ($tanggal->is($today)) {
+                            // Jika hari ini, cek jam terakhir
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $statusSesi = 'Alpa'; // Sudah lewat jam sekolah
+                            } else {
+                                $statusSesi = 'Belum Absen'; // Masih dalam jam sekolah
+                            }
+                        } else {
+                            $statusSesi = '-'; // Masa depan (seharusnya tidak kena loop ini karena break di atas)
+                        }
                         $logSesi->status = 'Alpa';
                         $logSesi->status_keterlambatan = null;
                         $logSesi->jam_absen = null;

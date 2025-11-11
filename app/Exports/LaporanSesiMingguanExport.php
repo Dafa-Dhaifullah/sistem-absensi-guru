@@ -7,6 +7,7 @@ use App\Models\HariLibur;
 use App\Models\JadwalPelajaran;
 use App\Models\KalenderBlok;
 use App\Models\MasterHariKerja; 
+use App\Models\MasterJamPelajaran;
 use Carbon\Carbon; // Import Carbon
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
@@ -34,6 +35,7 @@ class LaporanSesiMingguanExport implements WithEvents
         $awalMinggu = Carbon::parse($this->tanggalMulai)->startOfDay();
         $akhirMinggu = Carbon::parse($this->tanggalSelesai)->startOfDay();
         $today = now('Asia/Jakarta')->startOfDay();
+        $now = now('Asia/Jakarta');
         $tanggalRange = $awalMinggu->locale('id_ID')->toPeriod($akhirMinggu);
         
         $semuaGuru = User::where('role', 'guru')
@@ -56,6 +58,10 @@ class LaporanSesiMingguanExport implements WithEvents
 
         $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
 
+        $jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
+
         $laporanPerSesi = collect();
 
         // --- 2. LOOPING PER GURU ---
@@ -69,7 +75,7 @@ class LaporanSesiMingguanExport implements WithEvents
             foreach ($tanggalRange as $tanggal) {
                 $tanggal = $tanggal->startOfDay(); // Pastikan start of day
 
-                if ($tanggal->gt($today)) break;
+                
                 
                 $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
                   if (!$hariKerjaAktif->contains($namaHari)) {
@@ -118,13 +124,19 @@ class LaporanSesiMingguanExport implements WithEvents
 
                 $totalSesiWajib += $jadwalBlok->count();
 
-                // --- 4. LOOPING PER BLOK (CEK KEHADIRAN) ---
+                // 2. JANGAN LANJUTKAN jika tanggal ini ada di masa depan
+                if ($tanggal->gt($today)) {
+                    continue; 
+                }
+                // ==========================================================
+
+                // 3. Status (Hadir/Alpa/dll) HANYA dihitung untuk hari ini ke belakang
                 foreach ($jadwalBlok as $blok) {
                     $jadwalPertamaId = $blok['jadwal_ids'][0];
                    
                     $laporan = $guru->laporanHarian
                         ->where('jadwal_pelajaran_id', $jadwalPertamaId)
-                        ->where('tanggal', $tanggal) // Filter berdasarkan hari
+                        ->where('tanggal', $tanggal) 
                         ->first();
                         
                     if ($laporan) {
@@ -140,7 +152,15 @@ class LaporanSesiMingguanExport implements WithEvents
                             default: $totalAlpa++; break;
                         }
                     } else {
-                        $totalAlpa++;
+                        if ($tanggal->isBefore($today)) {
+                            $totalAlpa++;
+                        } elseif ($tanggal->is($today)) {
+                            // $namaHari sudah didefinisikan di loop atas
+                            $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                            if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                $totalAlpa++;
+                            }
+                        }
                     }
                 }
             } // End looping per hari

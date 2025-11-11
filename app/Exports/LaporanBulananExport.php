@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\HariLibur;
 use App\Models\KalenderBlok; 
 use App\Models\MasterHariKerja;
+use App\Models\MasterJamPelajaran;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -22,6 +23,7 @@ class LaporanBulananExport implements WithEvents
     protected $daysInMonth;
     protected $namaBulan;
     protected $hariKerjaEfektif = [];
+    protected $jamTerakhirPerHari;
 
     public function __construct(int $bulan, int $tahun)
     {
@@ -39,6 +41,10 @@ class LaporanBulananExport implements WithEvents
                 $query->whereYear('tanggal', $tahun)->whereMonth('tanggal', $bulan);
             }, 'jadwalPelajaran'])
             ->orderBy('name', 'asc')->get();
+
+         $this->jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
         
         $this->hitungHariKerja();
     }
@@ -119,9 +125,10 @@ class LaporanBulananExport implements WithEvents
         $daysInMonth = $this->daysInMonth;
         $semuaGuru = $this->semuaGuru;
         $hariKerjaEfektif = $this->hariKerjaEfektif;
+        $jamTerakhirPerHari = $this->jamTerakhirPerHari;
 
         return [
-            AfterSheet::class => function (AfterSheet $event) use ($namaBulan, $tahun, $bulan, $daysInMonth, $semuaGuru, $hariKerjaEfektif) {
+            AfterSheet::class => function (AfterSheet $event) use ($namaBulan, $tahun, $bulan, $daysInMonth, $semuaGuru, $hariKerjaEfektif, $jamTerakhirPerHari) {
                 $sheet = $event->sheet->getDelegate();
                 // === A4 LANDSCAPE & FIT ===
 $pageSetup = $sheet->getPageSetup();
@@ -138,6 +145,7 @@ $sheet->getPageMargins()
     ->setLeft(0.4)->setRight(0.4);
 
                 $today = \Carbon\Carbon::now('Asia/Jakarta')->startOfDay();
+                 $now = \Carbon\Carbon::now('Asia/Jakarta');
                 
                 // --- 1. HEADER KOMPLEKS ---
                 $sheet->mergeCells('C1:AF1')->setCellValue('C1', 'KEHADIRAN GURU');
@@ -174,6 +182,7 @@ $sheet->getPageMargins()
                         $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 2);
                         $tanggal = \Carbon\Carbon::create($tahun, $bulan, $i)->startOfDay();
                         $tanggalCek = $tanggal->toDateString();
+                        $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
                         
                         $cellValue = '-'; 
                         // Logika $isHariKerja sekarang akurat
@@ -189,8 +198,20 @@ $sheet->getPageMargins()
                                 elseif ($laporanPerHari->contains('status', 'Izin')) { $cellValue = 'I'; $totalIzin++; }
                                 else { $cellValue = 'A'; $totalAlpa++; }
                             } else {
-                                if ($tanggal->isBefore($today)) { $cellValue = 'A'; $totalAlpa++; }
-                                else { $cellValue = '-'; }
+                               if ($tanggal->isBefore($today)) {
+                                    $cellValue = 'A'; 
+                                    $totalAlpa++;
+                                } elseif ($tanggal->is($today)) {
+                                    $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                                    if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                        $cellValue = 'A';
+                                        $totalAlpa++;
+                                    } else {
+                                        $cellValue = '-'; // Masih "Belum Absen"
+                                    }
+                                } else {
+                                    $cellValue = '-'; // Masa depan
+                                }
                             }
                         }
                         $sheet->setCellValue($col . $row, $cellValue);

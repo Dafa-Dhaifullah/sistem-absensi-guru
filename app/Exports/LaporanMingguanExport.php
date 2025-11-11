@@ -2,6 +2,11 @@
 
 namespace App\Exports;
 
+use App\Models\MasterJamPelajaran;
+use App\Models\MasterHariKerja;
+use App\Models\KalenderBlok;
+use App\Models\HariLibur;
+use App\Models\User;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -20,6 +25,7 @@ class LaporanMingguanExport implements WithEvents
     protected $tanggalSelesai;
     protected $semuaGuru; 
     protected $hariKerjaEfektif;
+    protected $jamTerakhirPerHari;
 
     // Konstruktor sekarang menerima data yang sudah diproses dari controller
     public function __construct(Collection $laporanHarianTeringkas, array $summaryTotal, Collection $semuaGuru, $tanggalRange, $tanggalMulai, $tanggalSelesai, $hariKerjaEfektif)
@@ -31,6 +37,9 @@ class LaporanMingguanExport implements WithEvents
         $this->tanggalMulai = $tanggalMulai;
         $this->tanggalSelesai = $tanggalSelesai;
         $this->hariKerjaEfektif = $hariKerjaEfektif;
+        $this->jamTerakhirPerHari = MasterJamPelajaran::select('hari', \DB::raw('MAX(jam_selesai) as jam_terakhir'))
+                            ->groupBy('hari')
+                            ->pluck('jam_terakhir', 'hari');
     }
 
     public function registerEvents(): array
@@ -39,6 +48,8 @@ class LaporanMingguanExport implements WithEvents
         AfterSheet::class => function (AfterSheet $event) {
             $sheet = $event->sheet->getDelegate();
             $today = Carbon::now('Asia/Jakarta')->startOfDay();
+             $now = Carbon::now('Asia/Jakarta'); // <-- Waktu saat ini
+            $jamTerakhirPerHari = $this->jamTerakhirPerHari; 
 
             // ====== SET HALAMAN: A4 LANDSCAPE + FIT TO WIDTH ======
             $pageSetup = $sheet->getPageSetup();
@@ -114,7 +125,35 @@ class LaporanMingguanExport implements WithEvents
                 $colIndex = 2; // B
                 foreach ($this->tanggalRange as $tanggal) {
                     $col    = Coordinate::stringFromColumnIndex($colIndex);
-                    $status = $laporan['dataHarian'][$tanggal->toDateString()];
+                        
+                        // ==========================================================
+                        // ## PERBAIKAN LOGIKA ALPA (BATAS JAM ABSEN) ##
+                        // ==========================================================
+                        $tanggalCek = $tanggal->toDateString();
+                        // Ambil status dari data yang sudah diproses
+                        $status = $laporan['dataHarian'][$tanggalCek] ?? '-';
+                        
+                        // Cek ulang jika statusnya '-', mungkin itu 'Alpa'
+                        if ($status === '-') {
+                            $isHariKerja = isset($this->hariKerjaEfektif[$guru->id]) && $this->hariKerjaEfektif[$guru->id]->contains($tanggalCek);
+                            
+                            if ($isHariKerja) {
+                                $namaHari = $tanggal->locale('id_ID')->isoFormat('dddd');
+                                
+                                if ($tanggal->isBefore($today)) {
+                                    $status = 'A';
+                                } elseif ($tanggal->is($today)) {
+                                    $jamTerakhirString = $jamTerakhirPerHari->get($namaHari);
+                                    if ($jamTerakhirString && $now->toTimeString() > $jamTerakhirString) {
+                                        $status = 'A';
+                                    }
+                                    // Jika tidak, biarkan status = '-' (Belum Absen)
+                                }
+                                // Jika $tanggal->isFuture(), biarkan status = '-'
+                            }
+                        }
+                        // ==========================================================
+
                     $sheet->setCellValue("{$col}{$rowIndex}", $status);
                     $colIndex++;
                 }
