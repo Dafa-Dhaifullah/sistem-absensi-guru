@@ -849,7 +849,7 @@ class LaporanController extends Controller
             $jamKeSekarang = null;
             $jadwalSekarang = collect();
             $laporanHariIni = collect();
-            $tipeMingguString = 'Hari Libur'; // REVISI: Variabel string yang aman
+            $tipeMingguString = 'Hari Libur'; 
         } else {
             $hariKerjaAktif = MasterHariKerja::where('is_aktif', 1)->pluck('nama_hari');
 
