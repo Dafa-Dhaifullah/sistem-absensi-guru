@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MasterJamPelajaran;
 use Illuminate\Http\Request;
+use Carbon\Carbon; // Import Carbon untuk manipulasi waktu
 
 class MasterJamController extends Controller
 {
@@ -25,8 +26,8 @@ class MasterJamController extends Controller
     {
         // Ambil 10 jam pelajaran untuk hari yang dipilih
         $jamPelajaran = MasterJamPelajaran::where('hari', $hari)
-                                ->orderBy('jam_ke', 'asc')
-                                ->get();
+                                        ->orderBy('jam_ke', 'asc')
+                                        ->get();
         
         // Jika data master jam belum ada (misal setelah migrate),
         // buat 10 jam default agar form tidak kosong.
@@ -35,8 +36,8 @@ class MasterJamController extends Controller
                 MasterJamPelajaran::create([
                     'hari' => $hari,
                     'jam_ke' => $i,
-                    'jam_mulai' => '07:00',
-                    'jam_selesai' => '07:45'
+                    'jam_mulai' => '07:00:00', // Format DB standar
+                    'jam_selesai' => '07:45:00'
                 ]);
             }
             // Ambil lagi datanya setelah dibuat
@@ -53,13 +54,11 @@ class MasterJamController extends Controller
     {
         $request->validate([
             'jam_mulai' => 'required|array',
-            // Terima format HH:MM atau HH:MM:SS
-            'jam_mulai.*' => 'required|date_format:H:i,H:i:s', 
+            'jam_mulai.*' => 'required|date_format:H:i', // Paksa format H:i (07:00)
             'jam_selesai' => 'required|array',
-            // Terima format HH:MM atau HH:MM:SS
-            'jam_selesai.*' => 'required|date_format:H:i,H:i:s|after:jam_mulai.*', 
+            'jam_selesai.*' => 'required|date_format:H:i|after:jam_mulai.*', 
         ],[
-            'jam_selesai.*.after' => 'Jam Selesai harus setelah Jam Mulai.'
+            'jam_selesai.*.after' => 'Jam Selesai harus lebih akhir dari Jam Mulai.'
         ]);
 
         // Loop dan update setiap jam pelajaran (jam ke 1 s/d 10)
@@ -72,7 +71,7 @@ class MasterJamController extends Controller
                 MasterJamPelajaran::where('hari', $hari)
                     ->where('jam_ke', $jam_ke)
                     ->update([
-                        'jam_mulai' => $jam_mulai,
+                        'jam_mulai' => $jam_mulai, // Akan disimpan sebagai H:i:s oleh DB
                         'jam_selesai' => $jam_selesai,
                     ]);
             }
